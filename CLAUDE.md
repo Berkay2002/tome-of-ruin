@@ -29,12 +29,16 @@ Unity 2022.3 LTS, URP 2D, C#, Cinemachine, Tilemap, Unity Test Framework (NUnit)
 - `[RequireComponent]` attribute when a MonoBehaviour depends on another component
 - `[CreateAssetMenu]` attribute on all ScriptableObjects
 
-## Editor Setup Tools
+## First-Time Unity Setup
 
-Unity is not installed on the dev server. Three editor scripts auto-generate assets:
-- **Tools > Generate Data Assets** — creates all SOs (attacks, combo books, enemies, harmony table)
-- **Tools > Generate Prefabs** — creates Player, 4 enemies, Projectile, 4 interactables
-- **Tools > Generate Scenes** — creates ZoneA, ZoneB, ZoneC, BossArena, MainMenu
+1. Open project folder in **Unity 2022.3 LTS** (URP template)
+2. Run **Tools > Generate Data Assets** — creates all SOs (attacks, combo books, enemies, harmony table)
+3. Run **Tools > Generate Prefabs** — creates Player, 4 enemies, Projectile, 4 interactables
+4. Run **Tools > Generate Scenes** — creates ZoneA, ZoneB, ZoneC, BossArena, MainMenu
+5. File > Build Settings — add all 5 scenes (MainMenu, ZoneA, ZoneB, ZoneC, BossArena)
+6. Edit > Project Settings > Tags and Layers — add `"Enemy"` tag and `"Enemy"` layer
+7. On Player prefab: set `PlayerCombat.enemyLayer` to the Enemy layer
+8. On Player prefab: assign `HarmonyTable` asset to `ComboExecutor.harmonyTable`
 
 ## Testing
 
@@ -42,6 +46,13 @@ Unity is not installed on the dev server. Three editor scripts auto-generate ass
 - EditMode tests: `Assets/Tests/EditMode/` — pure logic (HarmonyCalculator, ComboBookData, GameState, AttackData)
 - PlayMode tests: `Assets/Tests/PlayMode/` — MonoBehaviour tests (PlayerController, PlayerHealth, ComboExecutor)
 - Use `ScriptableObject.CreateInstance<T>()` to create test SOs, `Object.DestroyImmediate()` in TearDown
+
+## Design Vision
+
+- **Dark Souls 1-2 inspired** progression — linear but branching, interconnected zones, shortcuts, keys in side rooms
+- **Small/focused scope** — prototype-first mentality, don't over-engineer
+- **AI-driven development** — minimize human interaction, maximize what agents can generate reliably
+- **AI-generated art** — sprites and assets are AI-generated, 3/4 top-down perspective, dark desaturated palette
 
 ## Design References
 
