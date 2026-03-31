@@ -2,7 +2,8 @@
     "name": "Editor",
     "rootNamespace": "",
     "references": [
-        "GameScripts"
+        "GameScripts",
+        "Cinemachine"
     ],
     "includePlatforms": [
         "Editor"

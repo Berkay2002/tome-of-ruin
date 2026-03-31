@@ -4,12 +4,21 @@ using System.Collections.Generic;
 
 public class PlayerInventory : MonoBehaviour
 {
+    [Header("Starting Equipment")]
+    public ComboBookData startingBook;
+
     public List<AttackData> attacks = new List<AttackData>();
     public List<ComboBookData> comboBooks = new List<ComboBookData>();
     public ComboBookData equippedBook;
 
     public event Action<AttackData> OnAttackCollected;
     public event Action<ComboBookData> OnComboBookCollected;
+
+    private void Start()
+    {
+        if (startingBook != null && equippedBook == null)
+            AddComboBook(startingBook);
+    }
 
     public void AddAttack(AttackData attack)
     {

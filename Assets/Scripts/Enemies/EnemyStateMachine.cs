@@ -62,7 +62,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     private void Update()
     {
-        if (_player == null) return;
+        if (_player == null || data == null) return;
 
         switch (CurrentState)
         {

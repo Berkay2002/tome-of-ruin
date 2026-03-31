@@ -5,6 +5,7 @@ public class PlayerPotions : MonoBehaviour
 {
     public int maxPotions = 5;
     public float healAmount = 40f;
+    public int startingPotions = 3;
 
     public int CurrentPotions { get; private set; }
 
@@ -15,6 +16,7 @@ public class PlayerPotions : MonoBehaviour
     private void Awake()
     {
         _health = GetComponent<PlayerHealth>();
+        CurrentPotions = startingPotions;
     }
 
     public void AddPotion()

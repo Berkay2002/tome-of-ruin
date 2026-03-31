@@ -4,5 +4,20 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/BossArena.unity
+    guid: 31e99855df98276439a187548e30c84b
+  - enabled: 1
+    path: Assets/Scenes/MainMenu.unity
+    guid: 7db197e839dff274da20eaac631391ca
+  - enabled: 1
+    path: Assets/Scenes/ZoneA.unity
+    guid: 602e38d438bbaae4ea5fb7b391bde0df
+  - enabled: 1
+    path: Assets/Scenes/ZoneB.unity
+    guid: 46c23c387bd56fc45b1b022c518fdf1b
+  - enabled: 1
+    path: Assets/Scenes/ZoneC.unity
+    guid: df9c802f34bd57b4899729fc1db4d5fe
   m_configObjects: {}

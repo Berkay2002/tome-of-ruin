@@ -22,6 +22,16 @@ public static class PrefabGenerator
         Debug.Log("All prefabs generated!");
     }
 
+    private static void AssignPlaceholderSprite(GameObject go, string spriteName)
+    {
+        var sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Sprites/Placeholders/{spriteName}.png");
+        if (sprite != null)
+        {
+            var sr = go.GetComponent<SpriteRenderer>();
+            if (sr != null) sr.sprite = sprite;
+        }
+    }
+
     private static void EnsureDirectory(string path)
     {
         if (!AssetDatabase.IsValidFolder(path))
@@ -40,7 +50,8 @@ public static class PrefabGenerator
         var rb = go.AddComponent<Rigidbody2D>();
         rb.gravityScale = 0f;
         rb.freezeRotation = true;
-        go.AddComponent<BoxCollider2D>();
+        var playerCol = go.AddComponent<BoxCollider2D>();
+        playerCol.size = new Vector2(1f, 1f);
 
         var controller = go.AddComponent<PlayerController>();
         controller.moveSpeed = 5f;
@@ -50,13 +61,20 @@ public static class PrefabGenerator
         var health = go.AddComponent<PlayerHealth>();
         health.maxHealth = 100f;
 
-        go.AddComponent<PlayerInventory>();
+        var inventory = go.AddComponent<PlayerInventory>();
+        var startingBook = AssetDatabase.LoadAssetAtPath<ComboBookData>("Assets/Data/ComboBooks/TatteredManual.asset");
+        if (startingBook != null)
+            inventory.startingBook = startingBook;
 
         var combat = go.AddComponent<PlayerCombat>();
         combat.attackRange = 1.2f;
+        combat.enemyLayer = LayerMask.GetMask("Enemy");
 
         var executor = go.AddComponent<ComboExecutor>();
         executor.chainWindowDuration = 0.5f;
+        var harmonyTable = AssetDatabase.LoadAssetAtPath<HarmonyTable>("Assets/Data/HarmonyTable.asset");
+        if (harmonyTable != null)
+            executor.harmonyTable = harmonyTable;
 
         var potions = go.AddComponent<PlayerPotions>();
         potions.maxPotions = 5;
@@ -64,6 +82,7 @@ public static class PrefabGenerator
 
         go.AddComponent<PlayerInput>();
 
+        AssignPlaceholderSprite(go, "Player");
         PrefabUtility.SaveAsPrefabAsset(go, "Assets/Prefabs/Player/Player.prefab");
         Object.DestroyImmediate(go);
     }
@@ -79,18 +98,33 @@ public static class PrefabGenerator
     private static void CreateEnemyPrefab(string name, EnemyBehaviorType? behaviorType)
     {
         var go = new GameObject(name);
-        // Tag must exist in project — user may need to add "Enemy" tag manually
+        // Tag must exist in project
         try { go.tag = "Enemy"; }
         catch { Debug.LogWarning($"Tag 'Enemy' not found. Add it in Edit > Project Settings > Tags and Layers."); }
+
+        // Layer must exist for combat hit detection
+        int enemyLayerIndex = LayerMask.NameToLayer("Enemy");
+        if (enemyLayerIndex >= 0)
+            go.layer = enemyLayerIndex;
+        else
+            Debug.LogWarning("Layer 'Enemy' not found. Add it in Edit > Project Settings > Tags and Layers.");
 
         go.AddComponent<SpriteRenderer>();
         var rb = go.AddComponent<Rigidbody2D>();
         rb.gravityScale = 0f;
         rb.freezeRotation = true;
-        go.AddComponent<BoxCollider2D>();
+        var col = go.AddComponent<BoxCollider2D>();
+        col.size = new Vector2(1f, 1f);
 
         go.AddComponent<EnemyHealth>();
         var sm = go.AddComponent<EnemyStateMachine>();
+
+        // Assign EnemyData SO
+        var enemyData = AssetDatabase.LoadAssetAtPath<EnemyData>($"Assets/Data/Enemies/{name}.asset");
+        if (enemyData != null)
+            sm.data = enemyData;
+        else
+            Debug.LogWarning($"EnemyData not found for {name}. Run Tools > Generate Data Assets first.");
 
         if (behaviorType.HasValue)
         {
@@ -99,6 +133,7 @@ public static class PrefabGenerator
             sm.behavior = behavior;
         }
 
+        AssignPlaceholderSprite(go, name);
         PrefabUtility.SaveAsPrefabAsset(go, $"Assets/Prefabs/Enemies/{name}.prefab");
         Object.DestroyImmediate(go);
     }
@@ -113,6 +148,7 @@ public static class PrefabGenerator
         col.isTrigger = true;
         go.AddComponent<Projectile>();
 
+        AssignPlaceholderSprite(go, "Projectile");
         PrefabUtility.SaveAsPrefabAsset(go, "Assets/Prefabs/Enemies/Projectile.prefab");
         Object.DestroyImmediate(go);
     }
@@ -133,6 +169,7 @@ public static class PrefabGenerator
         col.isTrigger = true;
         go.AddComponent<T>();
 
+        AssignPlaceholderSprite(go, name);
         PrefabUtility.SaveAsPrefabAsset(go, $"Assets/Prefabs/Interactables/{name}.prefab");
         Object.DestroyImmediate(go);
     }

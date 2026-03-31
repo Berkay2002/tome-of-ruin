@@ -56,5 +56,5 @@ Unity 2022.3 LTS, URP 2D, C#, Cinemachine, Tilemap, Unity Test Framework (NUnit)
 
 ## Design References
 
-- @docs/superpowers/specs/2026-03-31-dark-fantasy-topdown-design.md
-- @docs/superpowers/plans/2026-03-31-dark-fantasy-topdown-plan.md
+- `docs/superpowers/specs/2026-03-31-dark-fantasy-topdown-design.md`
+- `docs/superpowers/plans/2026-03-31-dark-fantasy-topdown-plan.md`

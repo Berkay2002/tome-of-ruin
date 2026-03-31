@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f781d594aa29384479a6c9ef702c4710, type: 3}
+  m_Name: HarmonyTable
+  m_EditorClassIdentifier: 
+  entries:
+  - fromTag: 4
+    toTag: 6
+    level: 1
+  - fromTag: 6
+    toTag: 1
+    level: 1
+  - fromTag: 1
+    toTag: 3
+    level: 1
+  - fromTag: 3
+    toTag: 2
+    level: 1
+  - fromTag: 2
+    toTag: 4
+    level: 1
+  - fromTag: 5
+    toTag: 1
+    level: 1
+  - fromTag: 1
+    toTag: 5
+    level: 1
+  - fromTag: 6
+    toTag: 4
+    level: 2
+  - fromTag: 4
+    toTag: 4
+    level: 2
+  - fromTag: 6
+    toTag: 6
+    level: 2
+  - fromTag: 3
+    toTag: 3
+    level: 2
+  - fromTag: 5
+    toTag: 5
+    level: 2

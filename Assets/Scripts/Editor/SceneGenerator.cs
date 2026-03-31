@@ -4,21 +4,30 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Cinemachine;
 
 public static class SceneGenerator
 {
     [MenuItem("Tools/Generate Scenes")]
     public static void GenerateAll()
     {
+        if (Application.isPlaying)
+        {
+            Debug.LogError("Cannot generate scenes during Play Mode. Stop Play Mode first.");
+            return;
+        }
+
         EnsureDirectory("Assets/Scenes");
 
-        CreateZoneScene("ZoneA", "Starting Ruins");
-        CreateZoneScene("ZoneB", "Catacombs");
-        CreateZoneScene("ZoneC", "Cursed Chapel");
+        CreateZoneScene("ZoneA", "Starting Ruins", new string[] { "Hollow", "Hollow", "Wraith", "Knight" });
+        CreateZoneScene("ZoneB", "Catacombs", new string[] { "Wraith", "Knight", "Caster", "Hollow" });
+        CreateZoneScene("ZoneC", "Cursed Chapel", new string[] { "Knight", "Caster", "Wraith", "Caster" });
         CreateBossArena();
         CreateMainMenu();
 
-        Debug.Log("All scenes generated! Remember to add them to Build Settings.");
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+        Debug.Log("All scenes generated with player, enemies, camera follow, and interactables!");
     }
 
     private static void EnsureDirectory(string path)
@@ -31,47 +40,100 @@ public static class SceneGenerator
         }
     }
 
-    private static void CreateZoneScene(string sceneName, string zoneName)
+    private static GameObject SetupCamera()
     {
-        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-
-        // Camera
         var cameraObj = new GameObject("Main Camera");
         cameraObj.tag = "MainCamera";
         var cam = cameraObj.AddComponent<Camera>();
         cam.orthographic = true;
         cam.orthographicSize = 5f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = new Color(0.05f, 0.05f, 0.1f);
         cameraObj.transform.position = new Vector3(0, 0, -10);
 
-        // Directional Light (dim ambient)
-        var lightObj = new GameObject("Global Light");
-        var light = lightObj.AddComponent<Light>();
-        light.type = LightType.Directional;
-        light.intensity = 0.3f;
-        light.color = new Color(0.6f, 0.6f, 0.8f);
+        // Add CinemachineBrain so virtual cameras work
+        cameraObj.AddComponent<CinemachineBrain>();
 
-        // Player Spawn
-        var playerSpawn = new GameObject("PlayerSpawn");
-        playerSpawn.transform.position = Vector3.zero;
+        return cameraObj;
+    }
+
+    private static GameObject SetupVirtualCamera(Transform followTarget)
+    {
+        var vcamObj = new GameObject("CM vcam1");
+        var vcam = vcamObj.AddComponent<CinemachineVirtualCamera>();
+        vcam.m_Lens.OrthographicSize = 5f;
+        vcam.m_Lens.NearClipPlane = 0.1f;
+        vcam.m_Lens.FarClipPlane = 100f;
+        vcam.Follow = followTarget;
+
+        // Use framing transposer for 2D follow
+        var body = vcam.AddCinemachineComponent<CinemachineFramingTransposer>();
+        body.m_LookaheadTime = 0f;
+        body.m_DeadZoneWidth = 0.1f;
+        body.m_DeadZoneHeight = 0.1f;
+        body.m_SoftZoneWidth = 0.5f;
+        body.m_SoftZoneHeight = 0.5f;
+        body.m_CameraDistance = 10f;
+
+        // Add impulse listener for screen shake
+        vcamObj.AddComponent<CinemachineImpulseListener>();
+
+        return vcamObj;
+    }
+
+    private static GameObject SpawnPrefab(string prefabPath, Vector3 position)
+    {
+        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+        if (prefab == null)
+        {
+            Debug.LogWarning($"Prefab not found: {prefabPath}. Run Tools > Generate Prefabs first.");
+            // Create a placeholder
+            var placeholder = new GameObject(System.IO.Path.GetFileNameWithoutExtension(prefabPath));
+            placeholder.transform.position = position;
+            return placeholder;
+        }
+
+        var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+        instance.transform.position = position;
+        return instance;
+    }
+
+    private static void CreateZoneScene(string sceneName, string zoneName, string[] enemyNames)
+    {
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+        // Camera with solid background
+        SetupCamera();
+
+        // Player instance
+        var player = SpawnPrefab("Assets/Prefabs/Player/Player.prefab", Vector3.zero);
+
+        // Cinemachine virtual camera following the player
+        SetupVirtualCamera(player.transform);
+
+        // Screen shake source on player
+        var shakeObj = new GameObject("ScreenShake");
+        shakeObj.transform.SetParent(player.transform);
+        shakeObj.AddComponent<CinemachineImpulseSource>();
+        shakeObj.AddComponent<ScreenShake>();
 
         // Zone Label (for reference)
-        var zoneLabel = new GameObject($"--- {zoneName} ---");
+        new GameObject($"--- {zoneName} ---");
 
-        // Enemy spawn points
-        for (int i = 0; i < 4; i++)
+        // Enemy instances
+        for (int i = 0; i < enemyNames.Length; i++)
         {
-            var spawnPoint = new GameObject($"EnemySpawn_{i}");
-            spawnPoint.transform.position = new Vector3(3 + i * 3, Random.Range(-2f, 2f), 0);
+            string enemyName = enemyNames[i];
+            Vector3 pos = new Vector3(5 + i * 4, Random.Range(-3f, 3f), 0);
+            SpawnPrefab($"Assets/Prefabs/Enemies/{enemyName}.prefab", pos);
         }
 
         // Shrine
-        var shrine = new GameObject("Shrine_Spawn");
-        shrine.transform.position = new Vector3(-3, 0, 0);
+        SpawnPrefab("Assets/Prefabs/Interactables/Shrine.prefab", new Vector3(-3, 0, 0));
 
         // Scene transition trigger
         var transitionOut = new GameObject("SceneTransition_Out");
-        transitionOut.transform.position = new Vector3(20, 0, 0);
+        transitionOut.transform.position = new Vector3(25, 0, 0);
 
         EditorSceneManager.SaveScene(scene, $"Assets/Scenes/{sceneName}.unity");
     }
@@ -80,17 +142,30 @@ public static class SceneGenerator
     {
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
+        // Camera with dark red background
         var cameraObj = new GameObject("Main Camera");
         cameraObj.tag = "MainCamera";
         var cam = cameraObj.AddComponent<Camera>();
         cam.orthographic = true;
         cam.orthographicSize = 6f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = new Color(0.1f, 0.02f, 0.02f);
         cameraObj.transform.position = new Vector3(0, 0, -10);
+        cameraObj.AddComponent<CinemachineBrain>();
 
-        var playerSpawn = new GameObject("PlayerSpawn");
-        playerSpawn.transform.position = new Vector3(0, -4, 0);
+        // Player
+        var player = SpawnPrefab("Assets/Prefabs/Player/Player.prefab", new Vector3(0, -4, 0));
 
+        // Virtual camera
+        SetupVirtualCamera(player.transform);
+
+        // Screen shake
+        var shakeObj = new GameObject("ScreenShake");
+        shakeObj.transform.SetParent(player.transform);
+        shakeObj.AddComponent<CinemachineImpulseSource>();
+        shakeObj.AddComponent<ScreenShake>();
+
+        // Boss spawn point (boss not instantiated — spawned by BossController)
         var bossSpawn = new GameObject("BossSpawn");
         bossSpawn.transform.position = new Vector3(0, 3, 0);
 
@@ -106,6 +181,7 @@ public static class SceneGenerator
         var cam = cameraObj.AddComponent<Camera>();
         cam.orthographic = true;
         cam.orthographicSize = 5f;
+        cam.clearFlags = CameraClearFlags.SolidColor;
         cam.backgroundColor = new Color(0.05f, 0.05f, 0.1f);
         cameraObj.transform.position = new Vector3(0, 0, -10);
 
@@ -123,7 +199,7 @@ public static class SceneGenerator
         titleRect.anchoredPosition = new Vector2(0, 100);
         titleRect.sizeDelta = new Vector2(600, 100);
         var titleText = titleObj.AddComponent<Text>();
-        titleText.text = "Dark Fantasy";
+        titleText.text = "Tome of Ruin";
         titleText.fontSize = 48;
         titleText.alignment = TextAnchor.MiddleCenter;
         titleText.color = Color.white;
