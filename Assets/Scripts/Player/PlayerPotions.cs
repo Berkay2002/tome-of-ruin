@@ -1,22 +1,37 @@
 using UnityEngine;
+using System;
 
 public class PlayerPotions : MonoBehaviour
 {
-    public int potionCount;
     public int maxPotions = 5;
-    public float healAmount = 30f;
+    public float healAmount = 40f;
+
+    public int CurrentPotions { get; private set; }
+
+    public event Action<int> OnPotionCountChanged;
+
+    private PlayerHealth _health;
+
+    private void Awake()
+    {
+        _health = GetComponent<PlayerHealth>();
+    }
 
     public void AddPotion()
     {
-        if (potionCount < maxPotions)
-            potionCount++;
+        if (CurrentPotions >= maxPotions) return;
+        CurrentPotions++;
+        OnPotionCountChanged?.Invoke(CurrentPotions);
     }
 
-    public bool UsePotion()
+    public void UsePotion()
     {
-        // Stub — will be fully implemented in Task 17
-        if (potionCount <= 0) return false;
-        potionCount--;
-        return true;
+        if (CurrentPotions <= 0) return;
+        if (_health == null) return;
+        if (_health.CurrentHealth >= _health.maxHealth) return;
+
+        CurrentPotions--;
+        _health.Heal(healAmount);
+        OnPotionCountChanged?.Invoke(CurrentPotions);
     }
 }
