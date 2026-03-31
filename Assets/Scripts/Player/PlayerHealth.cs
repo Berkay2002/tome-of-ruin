@@ -38,6 +38,9 @@ public class PlayerHealth : MonoBehaviour
         CurrentHealth = Mathf.Max(0f, CurrentHealth - amount);
         OnHealthChanged?.Invoke(CurrentHealth, maxHealth);
 
+        if (ScreenShake.Instance != null)
+            ScreenShake.Instance.Shake(0.5f);
+
         if (CurrentHealth <= 0f)
         {
             if (_controller != null) _controller.SetState(PlayerState.Dead);
