@@ -1,0 +1,78 @@
+using System.Collections;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.TestUtils;
+
+public class PlayerControllerTests
+{
+    private GameObject _playerObj;
+    private PlayerController _player;
+
+    [SetUp]
+    public void SetUp()
+    {
+        _playerObj = new GameObject("Player");
+        _playerObj.AddComponent<Rigidbody2D>();
+        _playerObj.AddComponent<BoxCollider2D>();
+        _player = _playerObj.AddComponent<PlayerController>();
+        _player.moveSpeed = 5f;
+        _player.dodgeSpeed = 10f;
+        _player.dodgeDuration = 0.3f;
+    }
+
+    [TearDown]
+    public void TearDown()
+    {
+        Object.DestroyImmediate(_playerObj);
+    }
+
+    [Test]
+    public void Player_StartsInIdleState()
+    {
+        Assert.AreEqual(PlayerState.Idle, _player.CurrentState);
+    }
+
+    [Test]
+    public void Player_SetMoveInput_ChangesToMovingState()
+    {
+        _player.SetMoveInput(new Vector2(1, 0));
+        _player.UpdateState();
+        Assert.AreEqual(PlayerState.Moving, _player.CurrentState);
+    }
+
+    [Test]
+    public void Player_ZeroMoveInput_ReturnsToIdle()
+    {
+        _player.SetMoveInput(new Vector2(1, 0));
+        _player.UpdateState();
+        _player.SetMoveInput(Vector2.zero);
+        _player.UpdateState();
+        Assert.AreEqual(PlayerState.Idle, _player.CurrentState);
+    }
+
+    [Test]
+    public void Player_Dodge_EntersDodgingState()
+    {
+        _player.SetMoveInput(new Vector2(1, 0));
+        _player.StartDodge();
+        Assert.AreEqual(PlayerState.Dodging, _player.CurrentState);
+    }
+
+    [Test]
+    public void Player_CannotDodge_WhenAlreadyDodging()
+    {
+        _player.SetMoveInput(new Vector2(1, 0));
+        _player.StartDodge();
+        bool result = _player.StartDodge();
+        Assert.IsFalse(result);
+    }
+
+    [Test]
+    public void Player_CannotMove_WhenDead()
+    {
+        _player.SetState(PlayerState.Dead);
+        _player.SetMoveInput(new Vector2(1, 0));
+        _player.UpdateState();
+        Assert.AreEqual(PlayerState.Dead, _player.CurrentState);
+    }
+}
