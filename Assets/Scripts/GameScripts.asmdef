@@ -1,7 +1,10 @@
 {
     "name": "GameScripts",
     "rootNamespace": "",
-    "references": [],
+    "references": [
+        "Unity.TextMeshPro",
+        "Cinemachine"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

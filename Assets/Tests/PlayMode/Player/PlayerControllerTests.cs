@@ -1,7 +1,7 @@
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
-using UnityEngine.TestUtils;
+using UnityEngine.TestTools;
 
 public class PlayerControllerTests
 {
