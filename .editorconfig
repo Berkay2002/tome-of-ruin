@@ -1,0 +1,28 @@
+root = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# C# naming conventions
+dotnet_naming_rule.private_fields_should_be_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_camel_case.style = _camelCase
+dotnet_naming_rule.private_fields_should_be_camel_case.severity = suggestion
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style._camelCase.required_prefix = _
+dotnet_naming_style._camelCase.capitalization = camel_case
+
+[*.json]
+indent_style = space
+indent_size = 2
+
+[*.asmdef]
+indent_style = space
+indent_size = 4
