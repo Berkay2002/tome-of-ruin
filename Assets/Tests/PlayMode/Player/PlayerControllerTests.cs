@@ -75,4 +75,57 @@ public class PlayerControllerTests
         _player.UpdateState();
         Assert.AreEqual(PlayerState.Dead, _player.CurrentState);
     }
+
+    [Test]
+    public void PlayerHealth_TakeDamage_ReducesHealth()
+    {
+        var health = _playerObj.AddComponent<PlayerHealth>();
+        health.maxHealth = 100f;
+        health.Init();
+
+        health.TakeDamage(25f);
+
+        Assert.AreEqual(75f, health.CurrentHealth, 0.001f);
+    }
+
+    [Test]
+    public void PlayerHealth_TakeLethalDamage_SetsDeadState()
+    {
+        var health = _playerObj.AddComponent<PlayerHealth>();
+        health.maxHealth = 100f;
+        health.Init();
+
+        health.TakeDamage(150f);
+
+        Assert.AreEqual(0f, health.CurrentHealth, 0.001f);
+        Assert.AreEqual(PlayerState.Dead, _player.CurrentState);
+    }
+
+    [Test]
+    public void PlayerHealth_CannotTakeDamage_WhenDodging()
+    {
+        var health = _playerObj.AddComponent<PlayerHealth>();
+        health.maxHealth = 100f;
+        health.Init();
+
+        _player.SetMoveInput(new Vector2(1, 0));
+        _player.StartDodge();
+
+        health.TakeDamage(50f);
+
+        Assert.AreEqual(100f, health.CurrentHealth, 0.001f);
+    }
+
+    [Test]
+    public void PlayerHealth_Heal_ClampsToMax()
+    {
+        var health = _playerObj.AddComponent<PlayerHealth>();
+        health.maxHealth = 100f;
+        health.Init();
+
+        health.TakeDamage(20f);
+        health.Heal(50f);
+
+        Assert.AreEqual(100f, health.CurrentHealth, 0.001f);
+    }
 }
