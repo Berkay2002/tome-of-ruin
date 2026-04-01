@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using UnityEngine.U2D;
+// using UnityEngine.U2D; // Re-enable when SpriteShapeController visuals are added
 using UnityEngine.Rendering.Universal;
 using Cinemachine;
 
@@ -345,35 +345,12 @@ public static class LevelGenerator
         var roomObj = new GameObject($"Room_{name}");
         roomObj.transform.position = new Vector3(position.x, position.y, 0);
 
-        // --- Walls (SpriteShapeController) ---
+        // --- Walls (EdgeCollider2D only) ---
+        // SpriteShapeController visuals deferred until art assets exist.
+        // For now, walls are invisible colliders — functional for prototyping.
         var wallsObj = new GameObject("Walls");
         wallsObj.transform.SetParent(roomObj.transform, false);
 
-        var shapeController = wallsObj.AddComponent<SpriteShapeController>();
-        var spline = shapeController.spline;
-
-        // Clear default spline points
-        while (spline.GetPointCount() > 0)
-            spline.RemovePointAt(0);
-
-        // Insert vertices
-        for (int i = 0; i < vertices.Length; i++)
-        {
-            spline.InsertPointAt(i, new Vector3(vertices[i].x, vertices[i].y, 0));
-            spline.SetTangentMode(i, ShapeTangentMode.Linear);
-        }
-
-        shapeController.splineDetail = 4;
-        shapeController.autoUpdateCollider = false; // Manual collider — auto causes editor hang
-
-        // Load and assign SpriteShape profile
-        var profile = AssetDatabase.LoadAssetAtPath<SpriteShape>($"Assets/Data/SpriteShapeProfile_{zoneName}.asset");
-        if (profile != null)
-            shapeController.spriteShape = profile;
-        else
-            Debug.LogWarning($"LevelGenerator: SpriteShape not found for {zoneName}. Run Tools > Generate SpriteShape Profiles first.");
-
-        // Build EdgeCollider2D manually from vertices (closed loop)
         var edgeCollider = wallsObj.AddComponent<EdgeCollider2D>();
         var edgePoints = new Vector2[vertices.Length + 1];
         for (int i = 0; i < vertices.Length; i++)
