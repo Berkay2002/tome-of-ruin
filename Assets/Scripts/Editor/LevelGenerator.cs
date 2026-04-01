@@ -365,15 +365,23 @@ public static class LevelGenerator
         floorObj.transform.localPosition = new Vector3(bounds.center.x, bounds.center.y, 0);
 
         var floorRenderer = floorObj.AddComponent<SpriteRenderer>();
-        floorRenderer.drawMode = SpriteDrawMode.Tiled;
-        floorRenderer.size = bounds.size;
         floorRenderer.sortingOrder = -10;
+
+        var floorSprite = AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Art/LevelArt/{zoneName}/Floor_{zoneName}.png");
+        if (floorSprite != null)
+        {
+            floorRenderer.sprite = floorSprite;
+            floorRenderer.drawMode = SpriteDrawMode.Tiled;
+            floorRenderer.size = bounds.size;
+        }
+        else
+        {
+            Debug.LogWarning($"LevelGenerator: Floor sprite not found for {zoneName}. Run Tools > Generate Floor Materials first.");
+        }
 
         var floorMat = AssetDatabase.LoadAssetAtPath<Material>($"Assets/Materials/Floor_{zoneName}.mat");
         if (floorMat != null)
             floorRenderer.material = floorMat;
-        else
-            Debug.LogWarning($"LevelGenerator: Floor material not found for {zoneName}. Run Tools > Generate Floor Materials first.");
 
         // --- Camera Confiner ---
         var confinerObj = new GameObject("CameraConfiner");
