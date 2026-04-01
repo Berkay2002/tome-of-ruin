@@ -165,7 +165,6 @@ public class BossController : MonoBehaviour
     private void OnBossDeath()
     {
         _rb.velocity = Vector2.zero;
-        // Could trigger victory screen, for now just disable
-        enabled = false;
+        // Death visual + destroy handled by EnemyVisualFeedback
     }
 }
