@@ -34,7 +34,7 @@ RETRY_ATTEMPTS = 3
 RETRY_DELAY = 5  # seconds
 INTER_CALL_DELAY = 2  # seconds between API calls for rate limiting
 WATERMARK_MARGIN = 80  # pixels from bottom-right corner to fill for Gemini watermark
-FLOOR_SIZE = 1024   # final output resolution for floor tiles
+FLOOR_SIZE = 2048   # final output resolution for floor tiles (2K)
 WALL_EDGE_SIZE = 512  # final output resolution for wall edge sprites
 ZONES = ["ZoneA", "ZoneB", "ZoneC", "BossArena"]
 ASSET_TYPES = ["floor", "wall_edge"]
@@ -50,12 +50,13 @@ REGIONS = {
 ZONE_PROMPTS = {
     "ZoneA": {
         "floor": (
-            "Using the provided image of a dark stone pixel art floor tileset, change only the colors and surface "
-            "details to look like ancient, weathered ruins. Worn gray-green flagstones with dirt in the gaps and "
-            "subtle dark moss patches. A muted, desaturated palette of grays with faint green accents. Add small "
-            "cracks filled with dark grime. Keep the pixel art style, tile structure, crack patterns, and top-down "
-            "perspective exactly the same. This is a seamless floor tile for a dark fantasy starting ruins area in "
-            "a top-down 2D game."
+            "Generate a seamless tileable top-down dark fantasy floor texture in pixel art style. "
+            "Ancient weathered ruins: irregular gray-green flagstones of varying sizes and shapes, with dark dirt "
+            "and grime filling the gaps between stones. Subtle dark moss patches growing in random corners. "
+            "Small cracks of different lengths and directions across the stones. Each stone should look slightly "
+            "different — vary the shade, size, wear pattern, and crack density so no two stones are identical. "
+            "Muted desaturated palette of grays with faint green accents. The texture must tile seamlessly in "
+            "all directions with no visible seam lines. Avoid any obvious repeating grid pattern."
         ),
         "wall_edge": (
             "Using the provided image of dark stone pixel art wall edges, change only the colors, surface texture, "
@@ -68,12 +69,13 @@ ZONE_PROMPTS = {
     },
     "ZoneB": {
         "floor": (
-            "Using the provided image of a dark stone pixel art floor tileset, change only the colors and surface "
-            "details to look like underground catacombs. Shift the stone palette to warm browns and bone-white. "
-            "Make the surface smoother and more worn-down. Add sandy dust texture in the tile gaps and tiny bone "
-            "fragment chips scattered on the surface. Keep the pixel art style, tile structure, crack patterns, "
-            "and top-down perspective exactly the same. This is a seamless floor tile for a dark fantasy catacomb "
-            "level in a top-down 2D game."
+            "Generate a seamless tileable top-down dark fantasy floor texture in pixel art style. "
+            "Underground catacombs: smooth worn-down stone in warm browns and bone-white, eroded by centuries. "
+            "Sandy dust fills the gaps between stones. Tiny bone fragment chips and teeth scattered randomly "
+            "across the surface — some half-buried in dust, others loose. Occasional larger skull fragment or "
+            "rib bone shard embedded in the stone. Each stone varies in size, shade, and wear. "
+            "The texture must tile seamlessly in all directions with no visible seam lines. "
+            "Avoid any obvious repeating grid pattern."
         ),
         "wall_edge": (
             "Using the provided image of dark stone pixel art wall edges, change only the colors, surface texture, "
@@ -86,12 +88,13 @@ ZONE_PROMPTS = {
     },
     "ZoneC": {
         "floor": (
-            "Using the provided image of a dark stone pixel art floor tileset, change only the colors and surface "
-            "details to look like a cursed chapel. Shift the stone palette to deep purple-gray and dark crimson. "
-            "Add thin ritual scratch marks across the tile surface and faint crimson stains seeping between the "
-            "cracks, like dried blood in the grout lines. Keep the pixel art style, tile structure, crack patterns, "
-            "and top-down perspective exactly the same. This is a seamless floor tile for a dark fantasy cursed "
-            "chapel in a top-down 2D game."
+            "Generate a seamless tileable top-down dark fantasy floor texture in pixel art style. "
+            "Cursed chapel: cracked dark slate tiles in deep purple-gray with dark crimson grout lines that look "
+            "like dried blood seeping between the stones. Thin ritual scratch marks etched randomly across some "
+            "tiles — pentagrams, runes, claw marks. Faint crimson stains splattered unevenly. Scattered glass "
+            "shards from broken stained glass catch faint light. Each tile varies in shade and damage level. "
+            "The texture must tile seamlessly in all directions with no visible seam lines. "
+            "Avoid any obvious repeating grid pattern."
         ),
         "wall_edge": (
             "Using the provided image of dark stone pixel art wall edges, change only the colors, surface texture, "
@@ -104,12 +107,13 @@ ZONE_PROMPTS = {
     },
     "BossArena": {
         "floor": (
-            "Using the provided image of a dark stone pixel art floor tileset, change only the colors and surface "
-            "details to look like a scorched boss arena. Shift the stone palette to near-black obsidian with subtle "
-            "blue-gray veining. Add faint orange-red glow lines in the deepest cracks, like cooling magma beneath "
-            "the surface. Minimal surface detail — smooth, oppressive, empty. Keep the pixel art style, tile "
-            "structure, crack patterns, and top-down perspective exactly the same. This is a seamless floor tile "
-            "for a dark fantasy boss arena in a top-down 2D game."
+            "Generate a seamless tileable top-down dark fantasy floor texture in pixel art style. "
+            "Boss arena: dark polished obsidian stone, near-black with subtle blue-gray veining running through "
+            "it like marble. Faint orange-red glow lines in the deepest cracks, like cooling magma beneath the "
+            "surface. The stone is smoother and more uniform than natural rock — deliberately shaped, oppressive. "
+            "Minimal surface detail. Occasional hairline fracture. Very dark, almost black overall. "
+            "The texture must tile seamlessly in all directions with no visible seam lines. "
+            "Avoid any obvious repeating grid pattern."
         ),
         "wall_edge": (
             "Using the provided image of dark stone pixel art wall edges, change only the colors, surface texture, "
@@ -179,7 +183,7 @@ def generate_image(client, region_image: Image.Image, prompt: str, model: str) -
                 config=types.GenerateContentConfig(
                     response_modalities=["TEXT", "IMAGE"],
                     image_config=types.ImageConfig(
-                        image_size="1K",
+                        image_size="2K",
                         aspect_ratio="1:1",
                     ),
                 ),

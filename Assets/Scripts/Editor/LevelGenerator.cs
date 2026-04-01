@@ -365,8 +365,8 @@ public static class LevelGenerator
 
         var meshFilter = floorObj.AddComponent<MeshFilter>();
         var meshRenderer = floorObj.AddComponent<MeshRenderer>();
-        meshRenderer.sortingLayerName = "Floor";
-        meshRenderer.sortingOrder = 0;
+        meshRenderer.sortingLayerName = "Default";
+        meshRenderer.sortingOrder = -100;
 
         int[] triangles = TriangulatePolygon(vertices);
         if (triangles.Length > 0)
@@ -374,7 +374,7 @@ public static class LevelGenerator
             var mesh = new Mesh();
             var verts3d = new Vector3[vertices.Length];
             var uvs = new Vector2[vertices.Length];
-            float tileScale = 0.1f; // UV scale: 1 tile per 10 units
+            float tileScale = 0.25f; // UV scale: 1 tile per 4 units
             for (int i = 0; i < vertices.Length; i++)
             {
                 verts3d[i] = new Vector3(vertices[i].x, vertices[i].y, 0);
