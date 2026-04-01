@@ -237,15 +237,18 @@ def main():
     # Post-process only mode: apply post-processing to all PNGs in output dir
     if args.post_process_only:
         output_dir = Path(args.output)
-        if not output_dir.exists():
-            print(f"ERROR: Output directory not found: {output_dir}")
+        raw_dir = output_dir / "raw"
+        # Read from raw/ if it exists, otherwise from main folder
+        source_dir = raw_dir if raw_dir.exists() else output_dir
+        if not source_dir.exists():
+            print(f"ERROR: Source directory not found: {source_dir}")
             sys.exit(1)
-        pngs = sorted(output_dir.glob("*.png"))
-        print(f"Post-processing {len(pngs)} images in {output_dir}")
+        pngs = sorted(source_dir.glob("*.png"))
+        print(f"Post-processing {len(pngs)} images from {source_dir} -> {output_dir}")
         for png_path in pngs:
             img = Image.open(png_path)
             processed = post_process(img, args.size)
-            processed.save(png_path)
+            processed.save(output_dir / png_path.name)
             print(f"  [PP] {png_path.name}")
         print("Done.")
         return
@@ -271,6 +274,8 @@ def main():
     # Setup output
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
+    raw_dir = output_dir / "raw"
+    raw_dir.mkdir(parents=True, exist_ok=True)
 
     # Build cherry-pick set if --only is specified
     only_set = set()
@@ -309,10 +314,11 @@ def main():
         if dir_prompt is None:
             # This is the base direction (up) - use the input image directly
             idle_bases[dir_name] = base_image
-            out_path = output_dir / f"player_idle_{dir_name}.png"
+            filename = f"player_idle_{dir_name}.png"
+            base_image.save(raw_dir / filename)
             save_img = base_image if args.no_post_process else post_process(base_image, args.size)
-            save_img.save(out_path)
-            print(f"  [COPY] player_idle_{dir_name}.png (base image)")
+            save_img.save(output_dir / filename)
+            print(f"  [COPY] {filename} (base image)")
             continue
 
         prompt = dir_prompt
@@ -326,10 +332,11 @@ def main():
         result = generate_image(client, base_image, prompt)
         if result:
             idle_bases[dir_name] = result  # keep raw for feeding into next generation
-            out_path = output_dir / f"player_idle_{dir_name}.png"
+            filename = f"player_idle_{dir_name}.png"
+            result.save(raw_dir / filename)
             save_img = result if args.no_post_process else post_process(result, args.size)
-            save_img.save(out_path)
-            print(f"    Saved: {out_path}")
+            save_img.save(output_dir / filename)
+            print(f"    Saved: {filename}")
         else:
             print(f"    FAILED - skipping direction {dir_name}")
 
@@ -380,11 +387,11 @@ def main():
 
                 result = generate_image(client, dir_base, prompt)
                 if result:
-                    out_path = output_dir / filename
+                    result.save(raw_dir / filename)
                     save_img = result if args.no_post_process else post_process(result, args.size)
-                    save_img.save(out_path)
+                    save_img.save(output_dir / filename)
                     total_generated += 1
-                    print(f"    Saved: {out_path}")
+                    print(f"    Saved: {filename}")
                 else:
                     total_failed += 1
                     print(f"    FAILED")
