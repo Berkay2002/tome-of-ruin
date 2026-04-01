@@ -364,7 +364,7 @@ public static class LevelGenerator
         }
 
         shapeController.splineDetail = 4;
-        shapeController.autoUpdateCollider = true;
+        shapeController.autoUpdateCollider = false; // Manual collider — auto causes editor hang
 
         // Load and assign SpriteShape profile
         var profile = AssetDatabase.LoadAssetAtPath<SpriteShape>($"Assets/Data/SpriteShapeProfile_{zoneName}.asset");
@@ -373,9 +373,13 @@ public static class LevelGenerator
         else
             Debug.LogWarning($"LevelGenerator: SpriteShape not found for {zoneName}. Run Tools > Generate SpriteShape Profiles first.");
 
-        // Ensure EdgeCollider2D is present
-        if (wallsObj.GetComponent<EdgeCollider2D>() == null)
-            wallsObj.AddComponent<EdgeCollider2D>();
+        // Build EdgeCollider2D manually from vertices (closed loop)
+        var edgeCollider = wallsObj.AddComponent<EdgeCollider2D>();
+        var edgePoints = new Vector2[vertices.Length + 1];
+        for (int i = 0; i < vertices.Length; i++)
+            edgePoints[i] = vertices[i];
+        edgePoints[vertices.Length] = vertices[0]; // Close the loop
+        edgeCollider.points = edgePoints;
 
         // --- Floor ---
         var bounds = CalculateBounds(vertices);
