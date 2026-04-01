@@ -57,14 +57,49 @@ The full Gemini output is used as the asset — no sub-tile cropping. Gemini out
 
 Each zone gets both color and texture modifications — not just palette swaps. The player should identify which zone they're in from walls and floor alone.
 
-Prompt template: *"Modify this dark stone pixel art tileset to look like [zone description]. Keep the same pixel art style, same tile size, same perspective. Only change the colors, textures, and surface details."*
+### Prompting Strategy
 
-| Zone | Color Shift | Texture/Detail Tweaks |
-|------|------------|----------------------|
-| **ZoneA** (Starting Ruins) | Gray-green, muted | Closest to base pack. Add moss patches, small cracks. Default ruin look. |
-| **ZoneB** (Catacombs) | Warm brown/bone | Smoother, worn-down stone. Bone fragments embedded in walls, sandy dust on floors. Underground feel. |
-| **ZoneC** (Cursed Chapel) | Deep purple/crimson | More ornate — carved stone edges, ritual markings/scratches on floors. Corruption visible in architecture. |
-| **BossArena** | Near-black/obsidian | Scorched, melted-looking edges. Floor has faint glowing cracks. Minimal detail — oppressive and empty. |
+Prompts combine multiple Gemini editing techniques from the official guide:
+
+- **Inpainting (semantic masking):** Target specific elements for change while preserving the rest. *"Change only the [element] to [new description]. Keep everything else exactly the same."*
+- **Adding/removing elements:** Describe additions that integrate naturally. *"Add [element] to the scene. Ensure the change matches the original style, lighting, and perspective."*
+- **Style transfer:** Transform the overall mood while preserving composition. *"Preserve the original composition but render it with [stylistic elements]."*
+- **High-fidelity preservation:** Describe what must NOT change alongside what should. *"Keep the pixel art style, tile structure, crack patterns, and perspective unchanged."*
+
+### Best Practices (from Gemini docs)
+
+- **Be hyper-specific:** Instead of "make it darker," describe: "shift the stone palette to near-black obsidian with subtle blue-gray veining and faint orange-red glow in the deepest cracks."
+- **Provide context and intent:** Explain purpose: "This is a floor tile for a dark fantasy catacomb level in a top-down 2D game."
+- **Use semantic negative prompts:** Instead of "no bright colors," describe positively: "a muted, desaturated palette of deep earth tones."
+
+### Prompt Templates
+
+**Floor prompt template:**
+```
+Using the provided image of a dark stone pixel art floor tileset, change only
+the colors and surface details to look like [zone floor description]. Keep the
+pixel art style, tile structure, crack patterns, and top-down perspective
+exactly the same. This is a seamless floor tile for a dark fantasy [zone name]
+in a top-down 2D game. [Zone-specific additions].
+```
+
+**Wall edge prompt template:**
+```
+Using the provided image of dark stone pixel art wall edges, change only the
+colors, surface texture, and decorative details to look like [zone wall
+description]. Keep the pixel art style, edge shape, and top-down perspective
+exactly the same. This is a wall edge sprite for a dark fantasy [zone name]
+in a top-down 2D game. [Zone-specific additions].
+```
+
+### Zone-Specific Prompt Details
+
+| Zone | Floor prompt details | Wall edge prompt details |
+|------|---------------------|------------------------|
+| **ZoneA** (Starting Ruins) | Worn gray-green flagstones with dirt in the gaps and subtle dark moss patches. Muted, desaturated palette of grays with faint green accents. Add small cracks filled with dark grime. | Gray-green broken stone masonry with uneven blocks. Add dark green moss growing in the crevices and small vine tendrils creeping along the edges. Keep the stone surface rough and weathered. |
+| **ZoneB** (Catacombs) | Shift the stone palette to warm browns and bone-white. Make the surface smoother and more worn-down. Add sandy dust texture in the tile gaps and tiny bone fragment chips scattered on the surface. | Shift to warm brown worn stone. Make the surface smoother, as if eroded by centuries underground. Add small bone fragments and skull chips embedded in the crevices between stones. |
+| **ZoneC** (Cursed Chapel) | Shift the stone palette to deep purple-gray and dark crimson. Add thin ritual scratch marks across the tile surface and faint crimson stains seeping between the cracks, like dried blood in the grout lines. | Shift to deep purple-gray ornate carved stone. Add thin carved ritual markings along the stone faces, with crimson stains bleeding down from the crevices. Make the stonework look more deliberately shaped, less natural. |
+| **BossArena** | Shift the stone palette to near-black obsidian with subtle blue-gray veining. Add faint orange-red glow lines in the deepest cracks, like cooling magma beneath the surface. Minimal surface detail — smooth, oppressive, empty. | Shift to near-black scorched stone with a melted, fused appearance. The edges should look heat-warped, with subtle orange-red glow in the deepest gaps. Fewer individual stones visible — more monolithic and oppressive. |
 
 ---
 
