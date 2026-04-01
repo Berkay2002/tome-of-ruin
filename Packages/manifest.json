@@ -1,12 +1,14 @@
 {
   "dependencies": {
     "com.unity.2d.sprite": "1.0.0",
+    "com.unity.2d.spriteshape": "9.0.4",
     "com.unity.2d.tilemap": "1.0.0",
     "com.unity.ads": "4.4.2",
     "com.unity.ai.navigation": "1.1.6",
     "com.unity.analytics": "3.8.1",
     "com.unity.cinemachine": "2.10.3",
     "com.unity.collab-proxy": "2.7.1",
+    "h8man.nav-mesh-plus": "https://github.com/h8man/NavMeshPlus.git#master",
     "com.unity.ide.rider": "3.0.36",
     "com.unity.ide.visualstudio": "2.0.22",
     "com.unity.ide.vscode": "1.2.5",
