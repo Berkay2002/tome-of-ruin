@@ -399,6 +399,7 @@ public static class LevelGenerator
         confinerCollider.points = vertices;
 
         // --- Room Trigger ---
+        var bounds = CalculateBounds(vertices);
         var triggerObj = new GameObject("RoomTrigger");
         triggerObj.transform.SetParent(roomObj.transform, false);
         triggerObj.transform.localPosition = new Vector3(bounds.center.x, bounds.center.y, 0);
