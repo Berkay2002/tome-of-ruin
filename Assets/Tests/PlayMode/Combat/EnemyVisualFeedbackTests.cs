@@ -60,7 +60,7 @@ public class EnemyVisualFeedbackTests
         // Wait one frame so Start() runs and event subscriptions are active
         yield return null;
 
-        _health.TakeDamage(10f, HarmonyLevel.None);
+        _health.TakeDamage(10f, HarmonyLevel.Neutral);
 
         // Material should be flash material immediately
         Assert.AreEqual(_flashMat, _sr.sharedMaterial);
@@ -77,11 +77,11 @@ public class EnemyVisualFeedbackTests
     {
         yield return null; // Let Start() run
 
-        _health.TakeDamage(5f, HarmonyLevel.None);
+        _health.TakeDamage(5f, HarmonyLevel.Neutral);
         yield return new WaitForSeconds(0.05f);
 
         // Hit again mid-flash
-        _health.TakeDamage(5f, HarmonyLevel.None);
+        _health.TakeDamage(5f, HarmonyLevel.Neutral);
 
         // Should still be flashing
         Assert.AreEqual(_flashMat, _sr.sharedMaterial);
@@ -100,7 +100,7 @@ public class EnemyVisualFeedbackTests
         Color originalColor = _sr.color;
 
         // Deal enough damage to trigger stagger
-        _health.TakeDamage(25f, HarmonyLevel.None);
+        _health.TakeDamage(25f, HarmonyLevel.Neutral);
 
         // Wait a frame for stagger to start
         yield return null;
@@ -123,7 +123,7 @@ public class EnemyVisualFeedbackTests
     {
         yield return null; // Let Start() run
 
-        _health.TakeDamage(150f, HarmonyLevel.None);
+        _health.TakeDamage(150f, HarmonyLevel.Neutral);
 
         // Should be flashing white
         Assert.AreEqual(_flashMat, _sr.sharedMaterial);
