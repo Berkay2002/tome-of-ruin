@@ -365,7 +365,8 @@ public static class LevelGenerator
 
         var meshFilter = floorObj.AddComponent<MeshFilter>();
         var meshRenderer = floorObj.AddComponent<MeshRenderer>();
-        meshRenderer.sortingOrder = -10;
+        meshRenderer.sortingLayerName = "Floor";
+        meshRenderer.sortingOrder = 0;
 
         int[] triangles = TriangulatePolygon(vertices);
         if (triangles.Length > 0)
