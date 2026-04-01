@@ -2,9 +2,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-using Cinemachine;
 
 public static class SceneGenerator
 {
@@ -19,15 +17,12 @@ public static class SceneGenerator
 
         EnsureDirectory("Assets/Scenes");
 
-        CreateZoneScene("ZoneA", "Starting Ruins", new string[] { "Hollow", "Hollow", "Wraith", "Knight" });
-        CreateZoneScene("ZoneB", "Catacombs", new string[] { "Wraith", "Knight", "Caster", "Hollow" });
-        CreateZoneScene("ZoneC", "Cursed Chapel", new string[] { "Knight", "Caster", "Wraith", "Caster" });
-        CreateBossArena();
+        LevelGenerator.GenerateAll();
         CreateMainMenu();
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("All scenes generated with player, enemies, camera follow, and interactables!");
+        Debug.Log("All scenes generated successfully.");
     }
 
     private static void EnsureDirectory(string path)
@@ -38,138 +33,6 @@ public static class SceneGenerator
             string folder = System.IO.Path.GetFileName(path);
             AssetDatabase.CreateFolder(parent, folder);
         }
-    }
-
-    private static GameObject SetupCamera()
-    {
-        var cameraObj = new GameObject("Main Camera");
-        cameraObj.tag = "MainCamera";
-        var cam = cameraObj.AddComponent<Camera>();
-        cam.orthographic = true;
-        cam.orthographicSize = 5f;
-        cam.clearFlags = CameraClearFlags.SolidColor;
-        cam.backgroundColor = new Color(0.05f, 0.05f, 0.1f);
-        cameraObj.transform.position = new Vector3(0, 0, -10);
-
-        // Add CinemachineBrain so virtual cameras work
-        cameraObj.AddComponent<CinemachineBrain>();
-
-        return cameraObj;
-    }
-
-    private static GameObject SetupVirtualCamera(Transform followTarget)
-    {
-        var vcamObj = new GameObject("CM vcam1");
-        var vcam = vcamObj.AddComponent<CinemachineVirtualCamera>();
-        vcam.m_Lens.OrthographicSize = 5f;
-        vcam.m_Lens.NearClipPlane = 0.1f;
-        vcam.m_Lens.FarClipPlane = 100f;
-        vcam.Follow = followTarget;
-
-        // Use framing transposer for 2D follow
-        var body = vcam.AddCinemachineComponent<CinemachineFramingTransposer>();
-        body.m_LookaheadTime = 0f;
-        body.m_DeadZoneWidth = 0.1f;
-        body.m_DeadZoneHeight = 0.1f;
-        body.m_SoftZoneWidth = 0.5f;
-        body.m_SoftZoneHeight = 0.5f;
-        body.m_CameraDistance = 10f;
-
-        // Add impulse listener for screen shake
-        vcamObj.AddComponent<CinemachineImpulseListener>();
-
-        return vcamObj;
-    }
-
-    private static GameObject SpawnPrefab(string prefabPath, Vector3 position)
-    {
-        var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-        if (prefab == null)
-        {
-            Debug.LogWarning($"Prefab not found: {prefabPath}. Run Tools > Generate Prefabs first.");
-            // Create a placeholder
-            var placeholder = new GameObject(System.IO.Path.GetFileNameWithoutExtension(prefabPath));
-            placeholder.transform.position = position;
-            return placeholder;
-        }
-
-        var instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
-        instance.transform.position = position;
-        return instance;
-    }
-
-    private static void CreateZoneScene(string sceneName, string zoneName, string[] enemyNames)
-    {
-        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-
-        // Camera with solid background
-        SetupCamera();
-
-        // Player instance
-        var player = SpawnPrefab("Assets/Prefabs/Player/Player.prefab", Vector3.zero);
-
-        // Cinemachine virtual camera following the player
-        SetupVirtualCamera(player.transform);
-
-        // Screen shake source on player
-        var shakeObj = new GameObject("ScreenShake");
-        shakeObj.transform.SetParent(player.transform);
-        shakeObj.AddComponent<CinemachineImpulseSource>();
-        shakeObj.AddComponent<ScreenShake>();
-
-        // Zone Label (for reference)
-        new GameObject($"--- {zoneName} ---");
-
-        // Enemy instances
-        for (int i = 0; i < enemyNames.Length; i++)
-        {
-            string enemyName = enemyNames[i];
-            Vector3 pos = new Vector3(5 + i * 4, Random.Range(-3f, 3f), 0);
-            SpawnPrefab($"Assets/Prefabs/Enemies/{enemyName}.prefab", pos);
-        }
-
-        // Shrine
-        SpawnPrefab("Assets/Prefabs/Interactables/Shrine.prefab", new Vector3(-3, 0, 0));
-
-        // Scene transition trigger
-        var transitionOut = new GameObject("SceneTransition_Out");
-        transitionOut.transform.position = new Vector3(25, 0, 0);
-
-        EditorSceneManager.SaveScene(scene, $"Assets/Scenes/{sceneName}.unity");
-    }
-
-    private static void CreateBossArena()
-    {
-        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-
-        // Camera with dark red background
-        var cameraObj = new GameObject("Main Camera");
-        cameraObj.tag = "MainCamera";
-        var cam = cameraObj.AddComponent<Camera>();
-        cam.orthographic = true;
-        cam.orthographicSize = 6f;
-        cam.clearFlags = CameraClearFlags.SolidColor;
-        cam.backgroundColor = new Color(0.1f, 0.02f, 0.02f);
-        cameraObj.transform.position = new Vector3(0, 0, -10);
-        cameraObj.AddComponent<CinemachineBrain>();
-
-        // Player
-        var player = SpawnPrefab("Assets/Prefabs/Player/Player.prefab", new Vector3(0, -4, 0));
-
-        // Virtual camera
-        SetupVirtualCamera(player.transform);
-
-        // Screen shake
-        var shakeObj = new GameObject("ScreenShake");
-        shakeObj.transform.SetParent(player.transform);
-        shakeObj.AddComponent<CinemachineImpulseSource>();
-        shakeObj.AddComponent<ScreenShake>();
-
-        // Boss spawn point (boss not instantiated — spawned by BossController)
-        var bossSpawn = new GameObject("BossSpawn");
-        bossSpawn.transform.position = new Vector3(0, 3, 0);
-
-        EditorSceneManager.SaveScene(scene, "Assets/Scenes/BossArena.unity");
     }
 
     private static void CreateMainMenu()
