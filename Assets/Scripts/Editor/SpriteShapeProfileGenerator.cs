@@ -77,7 +77,26 @@ public static class SpriteShapeGenerator
     {
         string profilePath = $"Assets/Data/SpriteShapeProfile_{zoneName}.asset";
         if (File.Exists(profilePath))
+        {
+            // Profile exists — refresh edge sprite in case texture was updated
+            var existing = AssetDatabase.LoadAssetAtPath<SpriteShape>(profilePath);
+            if (existing != null && edgeSprite != null)
+            {
+                var ranges = existing.angleRanges;
+                if (ranges != null && ranges.Count > 0)
+                {
+                    for (int i = 0; i < ranges.Count; i++)
+                    {
+                        var range = ranges[i];
+                        range.sprites.Clear();
+                        range.sprites.Add(edgeSprite);
+                        ranges[i] = range;
+                    }
+                    EditorUtility.SetDirty(existing);
+                }
+            }
             return;
+        }
 
         var profile = ScriptableObject.CreateInstance<SpriteShape>();
         profile.fillOffset = 0f;

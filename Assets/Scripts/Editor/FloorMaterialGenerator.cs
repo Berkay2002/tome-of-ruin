@@ -71,7 +71,20 @@ public static class FloorMaterialGenerator
     private static void CreateFloorMaterial(string zoneName, string zoneDir)
     {
         string matPath = $"Assets/Materials/Floor_{zoneName}.mat";
-        if (File.Exists(matPath)) return;
+        string texPath = $"{zoneDir}/Floor_{zoneName}.png";
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+
+        if (File.Exists(matPath))
+        {
+            // Material exists — refresh texture reference in case texture was updated
+            var existing = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+            if (existing != null && tex != null && existing.mainTexture != tex)
+            {
+                existing.mainTexture = tex;
+                EditorUtility.SetDirty(existing);
+            }
+            return;
+        }
 
         var shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Lit-Default");
         if (shader == null)
@@ -85,8 +98,6 @@ public static class FloorMaterialGenerator
         var mat = new Material(shader);
         mat.mainTextureScale = new Vector2(4f, 4f);
 
-        string texPath = $"{zoneDir}/Floor_{zoneName}.png";
-        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
         if (tex != null)
             mat.mainTexture = tex;
 
