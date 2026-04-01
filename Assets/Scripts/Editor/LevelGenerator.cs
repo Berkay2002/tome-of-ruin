@@ -494,6 +494,21 @@ public static class LevelGenerator
     // ----------------------------------------------------------------
     private static int[] TriangulatePolygon(Vector2[] polygon)
     {
+        // Ensure counter-clockwise winding (ear-clipping requires CCW)
+        float signedArea = 0;
+        for (int i = 0; i < polygon.Length; i++)
+        {
+            int j = (i + 1) % polygon.Length;
+            signedArea += polygon[i].x * polygon[j].y;
+            signedArea -= polygon[j].x * polygon[i].y;
+        }
+        if (signedArea < 0)
+        {
+            // Clockwise — reverse to make CCW
+            polygon = (Vector2[])polygon.Clone();
+            System.Array.Reverse(polygon);
+        }
+
         var indices = new List<int>();
         var remaining = new List<int>();
         for (int i = 0; i < polygon.Length; i++)
