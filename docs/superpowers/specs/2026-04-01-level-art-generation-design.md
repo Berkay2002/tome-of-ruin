@@ -74,10 +74,33 @@ Prompt template: *"Modify this dark stone pixel art tileset to look like [zone d
 
 Mirrors `generate_player_sprites.py` patterns:
 
-- **SDK:** `google-genai`, model `gemini-3-pro-image-preview`
+- **SDK:** `google-genai`, default model `gemini-3-pro-image-preview` (overridable via `--model`)
 - **Auth:** `GEMINI_API_KEY` from environment / `.env`
 - **Retry:** 3 attempts, 5s delay between retries
 - **Raw output:** Saved to `Assets/Art/LevelArt/raw/` for debugging/re-processing
+
+### Gemini API Configuration
+
+The API supports explicit resolution and aspect ratio control via `generationConfig`:
+
+```python
+response = client.models.generate_content(
+    model=MODEL,
+    contents=[prompt, region_image],
+    config=types.GenerateContentConfig(
+        response_modalities=["TEXT", "IMAGE"],
+        image_config=types.ImageConfig(
+            image_size="1K",       # "512", "1K", "2K", "4K"
+            aspect_ratio="1:1",
+        ),
+    ),
+)
+```
+
+- **Floor textures:** Request `imageSize="1K"` (1024x1024), aspect ratio `"1:1"`
+- **Wall edge sprites:** Request `imageSize="512"` (512x512), aspect ratio `"1:1"`
+
+This requests the target resolution directly from Gemini, minimizing post-processing resize artifacts.
 
 ### Pipeline Steps
 
@@ -86,14 +109,14 @@ Mirrors `generate_player_sprites.py` patterns:
 2. Slice floor region and wall_edge region (~128x128 chunks)
 3. For each zone:
    a. Check if Floor_{Zone}.png exists — skip unless --force
-   b. Send floor region + zone floor prompt to Gemini
+   b. Send floor region + zone floor prompt to Gemini (imageSize="1K")
    c. Save raw output to Assets/Art/LevelArt/raw/
-   d. Post-process: remove watermark on raw output, resize to 1024x1024
+   d. Post-process: remove watermark on raw output
    e. Save to Assets/Art/LevelArt/{Zone}/Floor_{Zone}.png
    f. Check if WallEdge_{Zone}.png exists — skip unless --force
-   g. Send wall_edge region + zone wall prompt to Gemini
+   g. Send wall_edge region + zone wall prompt to Gemini (imageSize="512")
    h. Save raw output to Assets/Art/LevelArt/raw/
-   i. Post-process: remove watermark on raw output, resize to 512x512
+   i. Post-process: remove watermark on raw output
    j. Save to Assets/Art/LevelArt/{Zone}/WallEdge_{Zone}.png
    k. Brief delay (2s) between API calls for rate limiting
 4. Print summary
@@ -104,8 +127,8 @@ Mirrors `generate_player_sprites.py` patterns:
 Key difference from player sprites: **no background removal.** These are opaque tiles, not transparent characters.
 
 Post-processing steps (same order as `generate_player_sprites.py`):
-1. **Watermark removal:** Clear Gemini star in bottom-right corner on the raw ~1024x1024 output (same `WATERMARK_MARGIN` approach as player sprites — 80px corner clear)
-2. **Resize:** Downscale to target resolution (1024x1024 for floors, 512x512 for wall edges). Use gradual step-down with LANCZOS resampling, matching the player sprite script's approach (halve repeatedly, then final resize).
+1. **Watermark removal:** Clear Gemini star in bottom-right corner (same `WATERMARK_MARGIN` approach as player sprites — 80px corner clear on raw output)
+2. **Resize (fallback):** If Gemini returns an unexpected size, downscale to target resolution using gradual step-down with LANCZOS resampling (matching the player sprite script's approach). This is a safety net — the `imageSize` config should produce the correct size directly.
 
 ### CLI Interface
 
