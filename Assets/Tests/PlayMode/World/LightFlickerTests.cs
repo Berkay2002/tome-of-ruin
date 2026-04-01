@@ -20,7 +20,7 @@ public class LightFlickerTests
 
         yield return new WaitForSeconds(0.2f);
 
-        Assert.AreNotEqual(2f, light.intensity, 0.01f);
+        Assert.That(Mathf.Abs(light.intensity - 2f) > 0.01f, "Light intensity should have changed from base value");
 
         Object.DestroyImmediate(go);
     }
