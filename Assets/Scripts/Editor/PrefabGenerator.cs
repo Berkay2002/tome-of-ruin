@@ -14,6 +14,7 @@ public static class PrefabGenerator
 
         CreatePlayerPrefab();
         CreateEnemyPrefabs();
+        CreateBossPrefab();
         CreateProjectilePrefab();
         CreateInteractablePrefabs();
 
@@ -82,6 +83,22 @@ public static class PrefabGenerator
 
         go.AddComponent<PlayerInput>();
 
+        // Swing arc child for attack visual
+        var swingArcObj = new GameObject("SwingArc");
+        swingArcObj.transform.SetParent(go.transform);
+        swingArcObj.transform.localPosition = Vector3.zero;
+        var swingArcSr = swingArcObj.AddComponent<SpriteRenderer>();
+        swingArcSr.sortingOrder = 10;
+        var slashSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/Effects/SlashArc.png");
+        if (slashSprite != null)
+            swingArcSr.sprite = slashSprite;
+        else
+            Debug.LogWarning("SlashArc sprite not found at Assets/Sprites/Effects/SlashArc.png");
+        swingArcSr.enabled = false;
+
+        var attackVfx = go.AddComponent<AttackVisualFeedback>();
+        attackVfx.swingArcRenderer = swingArcSr;
+
         AssignPlaceholderSprite(go, "Player");
         PrefabUtility.SaveAsPrefabAsset(go, "Assets/Prefabs/Player/Player.prefab");
         Object.DestroyImmediate(go);
@@ -93,6 +110,48 @@ public static class PrefabGenerator
         CreateEnemyPrefab("Wraith", EnemyBehaviorType.DashRetreat);
         CreateEnemyPrefab("Knight", null);
         CreateEnemyPrefab("Caster", EnemyBehaviorType.Ranged);
+    }
+
+    private static void CreateBossPrefab()
+    {
+        var go = new GameObject("Boss");
+        try { go.tag = "Enemy"; }
+        catch { Debug.LogWarning("Tag 'Enemy' not found. Add it in Edit > Project Settings > Tags and Layers."); }
+
+        int enemyLayerIndex = LayerMask.NameToLayer("Enemy");
+        if (enemyLayerIndex >= 0)
+            go.layer = enemyLayerIndex;
+
+        go.AddComponent<SpriteRenderer>();
+        var rb = go.AddComponent<Rigidbody2D>();
+        rb.gravityScale = 0f;
+        rb.freezeRotation = true;
+        var col = go.AddComponent<BoxCollider2D>();
+        col.size = new Vector2(1.5f, 1.5f);
+
+        var health = go.AddComponent<EnemyHealth>();
+        var boss = go.AddComponent<BossController>();
+
+        var enemyData = AssetDatabase.LoadAssetAtPath<EnemyData>("Assets/Data/Enemies/Boss.asset");
+        if (enemyData != null)
+        {
+            boss.data = enemyData;
+            health.data = enemyData;
+        }
+
+        var projectilePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Enemies/Projectile.prefab");
+        if (projectilePrefab != null)
+            boss.projectilePrefab = projectilePrefab;
+
+        // Visual feedback
+        var vfx = go.AddComponent<EnemyVisualFeedback>();
+        var whiteFlashMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/WhiteFlash.mat");
+        if (whiteFlashMat != null)
+            vfx.whiteFlashMaterial = whiteFlashMat;
+
+        AssignPlaceholderSprite(go, "Caster"); // Reuse Caster placeholder until Boss sprite exists
+        PrefabUtility.SaveAsPrefabAsset(go, "Assets/Prefabs/Enemies/Boss.prefab");
+        Object.DestroyImmediate(go);
     }
 
     private static void CreateEnemyPrefab(string name, EnemyBehaviorType? behaviorType)
@@ -116,13 +175,16 @@ public static class PrefabGenerator
         var col = go.AddComponent<BoxCollider2D>();
         col.size = new Vector2(1f, 1f);
 
-        go.AddComponent<EnemyHealth>();
+        var health = go.AddComponent<EnemyHealth>();
         var sm = go.AddComponent<EnemyStateMachine>();
 
         // Assign EnemyData SO
         var enemyData = AssetDatabase.LoadAssetAtPath<EnemyData>($"Assets/Data/Enemies/{name}.asset");
         if (enemyData != null)
+        {
             sm.data = enemyData;
+            health.data = enemyData;
+        }
         else
             Debug.LogWarning($"EnemyData not found for {name}. Run Tools > Generate Data Assets first.");
 
@@ -134,6 +196,15 @@ public static class PrefabGenerator
         }
 
         AssignPlaceholderSprite(go, name);
+
+        // Visual feedback
+        var vfx = go.AddComponent<EnemyVisualFeedback>();
+        var whiteFlashMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/WhiteFlash.mat");
+        if (whiteFlashMat != null)
+            vfx.whiteFlashMaterial = whiteFlashMat;
+        else
+            Debug.LogWarning("WhiteFlash material not found. Run Tools > Generate Materials first.");
+
         PrefabUtility.SaveAsPrefabAsset(go, $"Assets/Prefabs/Enemies/{name}.prefab");
         Object.DestroyImmediate(go);
     }
