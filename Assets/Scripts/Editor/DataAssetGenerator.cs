@@ -161,15 +161,16 @@ public static class DataAssetGenerator
 
     private static void CreateEnemyData()
     {
-        CreateEnemy("Hollow", 30, 1.5f, 8, 1.0f, 2.0f, 5, 15, 0.5f, 0, false);
-        CreateEnemy("Wraith", 20, 4.0f, 12, 1.2f, 1.0f, 7, 10, 0.5f, 0, false);
-        CreateEnemy("Knight", 80, 1.0f, 15, 1.5f, 2.5f, 5, 40, 0.5f, 0.5f, true);
-        CreateEnemy("Caster", 25, 1.5f, 10, 6.0f, 2.0f, 8, 12, 0.5f, 0, false);
+        CreateEnemy("Hollow", 30, 1.5f, 8, 1.0f, 2.0f, 5, 15, 0.5f, 0, false, 0.4f);
+        CreateEnemy("Wraith", 20, 4.0f, 12, 1.2f, 1.0f, 7, 10, 0.5f, 0, false, 0.3f);
+        CreateEnemy("Knight", 80, 1.0f, 15, 1.5f, 2.5f, 5, 40, 0.5f, 0.5f, true, 0.6f);
+        CreateEnemy("Caster", 25, 1.5f, 10, 6.0f, 2.0f, 8, 12, 0.5f, 0, false, 0.3f);
+        CreateEnemy("Boss", 200, 2.0f, 20, 2.0f, 3.0f, 10, 80, 0.5f, 0.3f, true, 0.7f);
     }
 
     private static void CreateEnemy(string name, float hp, float speed, float damage,
         float range, float cooldown, float detection, float staggerThreshold,
-        float staggerDuration, float armor, bool armorOffStagger)
+        float staggerDuration, float armor, bool armorOffStagger, float navRadius = 0.4f)
     {
         var enemy = CreateAsset<EnemyData>($"Assets/Data/Enemies/{name}.asset");
         enemy.enemyName = name;
@@ -183,6 +184,7 @@ public static class DataAssetGenerator
         enemy.staggerDuration = staggerDuration;
         enemy.armorReduction = armor;
         enemy.armorDisabledDuringStagger = armorOffStagger;
+        enemy.navMeshRadius = navRadius;
         EditorUtility.SetDirty(enemy);
     }
 }

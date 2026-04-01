@@ -149,6 +149,14 @@ public static class PrefabGenerator
         if (whiteFlashMat != null)
             vfx.whiteFlashMaterial = whiteFlashMat;
 
+        var agent = go.AddComponent<UnityEngine.AI.NavMeshAgent>();
+        agent.updatePosition = false;
+        agent.updateRotation = false;
+        agent.updateUpAxis = false;
+        agent.radius = 0.7f;
+        agent.height = 0.1f;
+        agent.baseOffset = 0f;
+
         AssignPlaceholderSprite(go, "Caster"); // Reuse Caster placeholder until Boss sprite exists
         PrefabUtility.SaveAsPrefabAsset(go, "Assets/Prefabs/Enemies/Boss.prefab");
         Object.DestroyImmediate(go);
@@ -194,6 +202,14 @@ public static class PrefabGenerator
             behavior.behaviorType = behaviorType.Value;
             sm.behavior = behavior;
         }
+
+        var agent = go.AddComponent<UnityEngine.AI.NavMeshAgent>();
+        agent.updatePosition = false;
+        agent.updateRotation = false;
+        agent.updateUpAxis = false;
+        agent.radius = 0.4f;
+        agent.height = 0.1f;
+        agent.baseOffset = 0f;
 
         AssignPlaceholderSprite(go, name);
 

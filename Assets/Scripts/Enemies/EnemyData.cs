@@ -14,4 +14,7 @@ public class EnemyData : ScriptableObject
     public float staggerDuration = 0.5f;
     public float armorReduction = 0f;
     public bool armorDisabledDuringStagger = true;
+
+    [Header("Navigation")]
+    public float navMeshRadius = 0.4f;
 }

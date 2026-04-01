@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.AI;
 
 public enum EnemyState
 {
@@ -26,6 +27,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     private Rigidbody2D _rb;
     private EnemyHealth _health;
+    private NavMeshAgent _agent;
     private Transform _player;
     private int _patrolIndex;
     private float _patrolWaitTimer;
@@ -40,6 +42,14 @@ public class EnemyStateMachine : MonoBehaviour
         _rb.gravityScale = 0f;
         _rb.freezeRotation = true;
         _health = GetComponent<EnemyHealth>();
+
+        _agent = GetComponent<NavMeshAgent>();
+        if (_agent != null)
+        {
+            _agent.updatePosition = false;
+            _agent.updateRotation = false;
+            _agent.updateUpAxis = false;
+        }
     }
 
     private void Start()
@@ -57,11 +67,20 @@ public class EnemyStateMachine : MonoBehaviour
 
         var playerObj = GameObject.FindGameObjectWithTag("Player");
         if (playerObj != null) _player = playerObj.transform;
+
+        if (_agent != null && data != null)
+        {
+            _agent.speed = data.moveSpeed;
+            _agent.radius = data.navMeshRadius;
+        }
     }
 
     private void Update()
     {
         if (_player == null || data == null) return;
+
+        if (_agent != null)
+            _agent.nextPosition = transform.position;
 
         switch (CurrentState)
         {
@@ -119,8 +138,17 @@ public class EnemyStateMachine : MonoBehaviour
         }
 
         var target = patrolPoints[_patrolIndex].position;
-        Vector2 dir = ((Vector2)target - (Vector2)transform.position).normalized;
-        _rb.velocity = dir * data.moveSpeed;
+
+        if (_agent != null && _agent.isOnNavMesh)
+        {
+            _agent.SetDestination(target);
+            _rb.velocity = ((Vector2)_agent.desiredVelocity).normalized * data.moveSpeed;
+        }
+        else
+        {
+            Vector2 dir = ((Vector2)target - (Vector2)transform.position).normalized;
+            _rb.velocity = dir * data.moveSpeed;
+        }
 
         if (Vector2.Distance(transform.position, target) < 0.3f)
         {
@@ -146,8 +174,16 @@ public class EnemyStateMachine : MonoBehaviour
             return;
         }
 
-        Vector2 dir = ((Vector2)_player.position - (Vector2)transform.position).normalized;
-        _rb.velocity = dir * data.moveSpeed;
+        if (_agent != null && _agent.isOnNavMesh)
+        {
+            _agent.SetDestination(_player.position);
+            _rb.velocity = ((Vector2)_agent.desiredVelocity).normalized * data.moveSpeed;
+        }
+        else
+        {
+            Vector2 dir = ((Vector2)_player.position - (Vector2)transform.position).normalized;
+            _rb.velocity = dir * data.moveSpeed;
+        }
 
         _attackCooldownTimer -= Time.deltaTime;
     }
@@ -192,6 +228,8 @@ public class EnemyStateMachine : MonoBehaviour
         {
             _rb.velocity = Vector2.zero;
             GetComponent<Collider2D>().enabled = false;
+            if (_agent != null)
+                _agent.enabled = false;
         }
     }
 
@@ -211,5 +249,4 @@ public class EnemyStateMachine : MonoBehaviour
                 playerHealth.TakeDamage(data.attackDamage);
         }
     }
-
 }
