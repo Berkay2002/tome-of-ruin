@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 5525076888080841583}
   - component: {fileID: 5071864878049429070}
   - component: {fileID: 3513455045174838731}
+  - component: {fileID: 8440179082749644492}
   - component: {fileID: 5090004145182906605}
   m_Layer: 3
   m_Name: Wraith
@@ -208,6 +209,28 @@ MonoBehaviour:
   retreatDistance: 3
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
+--- !u!195 &8440179082749644492
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 978561541768012290}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.4
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 0.1
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!114 &5090004145182906605
 MonoBehaviour:
   m_ObjectHideFlags: 0

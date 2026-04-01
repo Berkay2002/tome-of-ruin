@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 2408144062573395922}
   - component: {fileID: 3324104654299516501}
   - component: {fileID: 4701021563154373742}
+  - component: {fileID: 5549167422396016157}
   - component: {fileID: 5994227198187119149}
   m_Layer: 3
   m_Name: Caster
@@ -208,6 +209,28 @@ MonoBehaviour:
   retreatDistance: 3
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
+--- !u!195 &5549167422396016157
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7574879467175582683}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.4
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 0.1
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!114 &5994227198187119149
 MonoBehaviour:
   m_ObjectHideFlags: 0

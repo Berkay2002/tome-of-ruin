@@ -23,3 +23,4 @@ MonoBehaviour:
   staggerDuration: 0.5
   armorReduction: 0
   armorDisabledDuringStagger: 0
+  navMeshRadius: 0.4

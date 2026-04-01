@@ -105,7 +105,7 @@ GameObject:
   - component: {fileID: 8079073099475110424}
   - component: {fileID: 6993787164899572403}
   - component: {fileID: 3317481959078022692}
-  - component: {fileID: 4060084808610288883}
+  - component: {fileID: 3175762547167743642}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -175,7 +175,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 2, y: 2}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -245,7 +245,7 @@ BoxCollider2D:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
     oldSize: {x: 2, y: 2}
-    newSize: {x: 1, y: 1}
+    newSize: {x: 2, y: 2}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
@@ -382,7 +382,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   swingArcRenderer: {fileID: 3308974562930772829}
---- !u!114 &4060084808610288883
+--- !u!114 &3175762547167743642
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
