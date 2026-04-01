@@ -44,13 +44,15 @@ Unity 2022.3 LTS, URP 2D, C#, Cinemachine, SpriteShape, NavMeshPlus, Unity Test 
 3. Run **Tools > Generate Materials** — creates WhiteFlash shader and material
 4. Run **Tools > Generate SpriteShape Profiles** — creates per-zone wall profiles
 5. Run **Tools > Generate Floor Materials** — creates per-zone floor textures and materials
-6. Run **Tools > Generate Prefabs** — creates Player, 4 enemies, Boss, Projectile, 4 interactables
-7. Run **Tools > Generate Levels** — creates ZoneA, ZoneB, ZoneC, BossArena with SpriteShape rooms
-8. Run **Tools > Generate Scenes** — creates MainMenu
-9. File > Build Settings — add all 5 scenes (MainMenu, ZoneA, ZoneB, ZoneC, BossArena)
-10. Edit > Project Settings > Tags and Layers — add `"Enemy"` tag and `"Enemy"` layer
-11. On Player prefab: set `PlayerCombat.enemyLayer` to the Enemy layer
-12. On Player prefab: assign `HarmonyTable` asset to `ComboExecutor.harmonyTable`
+6. Run `python tools/import_props.py` — copies tileset props into Assets/Art/LevelArt/Props/ with zone variants
+7. Run **Tools > Import Prop Textures** — configures prop PNGs as pixel-art sprites
+8. Run **Tools > Generate Prefabs** — creates Player, 4 enemies, Boss, Projectile, 4 interactables
+9. Run **Tools > Generate Levels** — creates ZoneA, ZoneB, ZoneC, BossArena with props, details, and wall visuals
+10. Run **Tools > Generate Scenes** — creates MainMenu
+11. File > Build Settings — add all 5 scenes (MainMenu, ZoneA, ZoneB, ZoneC, BossArena)
+12. Edit > Project Settings > Tags and Layers — add `"Enemy"` tag and `"Enemy"` layer
+13. On Player prefab: set `PlayerCombat.enemyLayer` to the Enemy layer
+14. On Player prefab: assign `HarmonyTable` asset to `ComboExecutor.harmonyTable`
 
 ## Testing
 

@@ -27,7 +27,12 @@ import numpy as np
 # --- Configuration ---
 
 MODEL = "gemini-3-pro-image-preview"
-SPRITESHEET_PATH = Path("temp_ref/Ground_rocks.png")
+SPRITESHEET_PATHS = {
+    "ground": Path("temp_ref/Ground_rocks.png"),
+    "coast": Path("temp_ref/Water_coasts.png"),
+}
+# Legacy alias for backward compat
+SPRITESHEET_PATH = SPRITESHEET_PATHS["ground"]
 OUTPUT_BASE = Path("Assets/Art/LevelArt")
 RAW_DIR = OUTPUT_BASE / "raw"
 RETRY_ATTEMPTS = 3
@@ -36,13 +41,17 @@ INTER_CALL_DELAY = 2  # seconds between API calls for rate limiting
 WATERMARK_MARGIN = 80  # pixels from bottom-right corner to fill for Gemini watermark
 FLOOR_SIZE = 2048   # final output resolution for floor tiles (2K)
 WALL_EDGE_SIZE = 512  # final output resolution for wall edge sprites
+DEPTH_SIZE = 512    # final output resolution for depth feature sprites
 ZONES = ["ZoneA", "ZoneB", "ZoneC", "BossArena"]
-ASSET_TYPES = ["floor", "wall_edge"]
+ASSET_TYPES = ["floor", "wall_edge", "cliff_edge", "boulder", "stairs"]
 
-# Pixel regions to slice from the spritesheet (left, top, right, bottom)
+# Pixel regions to slice from spritesheets: (sheet_key, left, top, right, bottom)
 REGIONS = {
-    "floor": (368, 464, 496, 592),
-    "wall_edge": (0, 192, 128, 320),
+    "floor": ("ground", 368, 464, 496, 592),
+    "wall_edge": ("ground", 0, 192, 128, 320),
+    "cliff_edge": ("ground", 128, 0, 304, 128),     # 176x128 cliff top edge with drop shadow
+    "boulder": ("coast", 0, 128, 80, 200),           # 80x72 boulder with shadow
+    "stairs": ("coast", 700, 128, 832, 200),         # 132x72 stepped stone pile
 }
 
 # --- Zone Prompts ---
@@ -66,6 +75,27 @@ ZONE_PROMPTS = {
             "perspective exactly the same. This is a wall edge sprite for a dark fantasy starting ruins area in a "
             "top-down 2D game."
         ),
+        "cliff_edge": (
+            "Using the provided image of a dark stone cliff edge seen from top-down, change only the colors and "
+            "surface texture to look like ancient overgrown ruins. The cliff face should be gray-green weathered "
+            "stone with dark moss clinging to the rock face. Subtle vine tendrils hanging over the edge. "
+            "Keep the exact same silhouette, drop shadow, and top-down perspective. The white/light background "
+            "area should remain white. This is a cliff ledge sprite for a dark fantasy ruins zone in a top-down 2D game."
+        ),
+        "boulder": (
+            "Using the provided image of a top-down boulder with shadow, change only the colors and surface "
+            "texture to look like a moss-covered ancient ruin stone. Gray-green weathered rock with dark green "
+            "moss patches and subtle lichen. Keep the exact same shape, shadow, and top-down perspective. "
+            "The white/light background area should remain white. This is a decorative boulder for a dark fantasy "
+            "ruins zone in a top-down 2D game."
+        ),
+        "stairs": (
+            "Using the provided image of stepped stone piles seen from top-down, change only the colors and "
+            "surface texture to look like crumbling ancient ruin steps. Gray-green weathered stone blocks, "
+            "irregular and broken, with moss growing between the cracks. Keep the exact same shape, stacking, "
+            "shadow, and top-down perspective. The white/light background area should remain white. "
+            "This is a stairs sprite for a dark fantasy ruins zone in a top-down 2D game."
+        ),
     },
     "ZoneB": {
         "floor": (
@@ -84,6 +114,28 @@ ZONE_PROMPTS = {
             "embedded in the crevices between stones. Keep the pixel art style, edge shape, and top-down "
             "perspective exactly the same. This is a wall edge sprite for a dark fantasy catacomb level in a "
             "top-down 2D game."
+        ),
+        "cliff_edge": (
+            "Using the provided image of a dark stone cliff edge seen from top-down, change only the colors and "
+            "surface texture to look like underground catacomb ledges. Warm brown eroded stone, smooth from "
+            "centuries of water erosion. Small bone fragments embedded in the rock face. Sandy dust on the "
+            "ledge surface. Keep the exact same silhouette, drop shadow, and top-down perspective. The white/light "
+            "background area should remain white. This is a cliff ledge sprite for a dark fantasy catacomb in a "
+            "top-down 2D game."
+        ),
+        "boulder": (
+            "Using the provided image of a top-down boulder with shadow, change only the colors and surface "
+            "texture to look like a catacomb rock formation. Warm brown smooth stone, eroded and rounded by "
+            "centuries underground. Bone-white mineral deposits on the surface. Keep the exact same shape, shadow, "
+            "and top-down perspective. The white/light background area should remain white. This is a decorative "
+            "boulder for a dark fantasy catacomb in a top-down 2D game."
+        ),
+        "stairs": (
+            "Using the provided image of stepped stone piles seen from top-down, change only the colors and "
+            "surface texture to look like worn catacomb steps. Warm brown stone, smoothed by centuries of foot "
+            "traffic, with sandy dust accumulated in the corners. Keep the exact same shape, stacking, shadow, "
+            "and top-down perspective. The white/light background area should remain white. "
+            "This is a stairs sprite for a dark fantasy catacomb in a top-down 2D game."
         ),
     },
     "ZoneC": {
@@ -104,6 +156,28 @@ ZONE_PROMPTS = {
             "edge shape, and top-down perspective exactly the same. This is a wall edge sprite for a dark fantasy "
             "cursed chapel in a top-down 2D game."
         ),
+        "cliff_edge": (
+            "Using the provided image of a dark stone cliff edge seen from top-down, change only the colors and "
+            "surface texture to look like a cursed chapel ledge. Deep purple-gray carved stone with ornate details. "
+            "Thin crimson stains dripping down the cliff face. Faint ritual scratch marks carved into the stone. "
+            "Keep the exact same silhouette, drop shadow, and top-down perspective. The white/light background "
+            "area should remain white. This is a cliff ledge sprite for a dark fantasy cursed chapel in a "
+            "top-down 2D game."
+        ),
+        "boulder": (
+            "Using the provided image of a top-down boulder with shadow, change only the colors and surface "
+            "texture to look like a cursed chapel rubble stone. Deep purple-gray carved stone, deliberately shaped "
+            "but now broken. Faint crimson stains and ritual scratch marks on the surface. Keep the exact same "
+            "shape, shadow, and top-down perspective. The white/light background area should remain white. "
+            "This is a decorative boulder for a dark fantasy cursed chapel in a top-down 2D game."
+        ),
+        "stairs": (
+            "Using the provided image of stepped stone piles seen from top-down, change only the colors and "
+            "surface texture to look like cursed chapel steps. Deep purple-gray ornate carved stone blocks "
+            "with crimson stains seeping between steps. Keep the exact same shape, stacking, shadow, and "
+            "top-down perspective. The white/light background area should remain white. "
+            "This is a stairs sprite for a dark fantasy cursed chapel in a top-down 2D game."
+        ),
     },
     "BossArena": {
         "floor": (
@@ -123,6 +197,28 @@ ZONE_PROMPTS = {
             "style, edge shape, and top-down perspective exactly the same. This is a wall edge sprite for a dark "
             "fantasy boss arena in a top-down 2D game."
         ),
+        "cliff_edge": (
+            "Using the provided image of a dark stone cliff edge seen from top-down, change only the colors and "
+            "surface texture to look like scorched boss arena obsidian. Near-black fused stone with a melted "
+            "appearance. Faint orange-red glow in the deepest cracks of the cliff face. Monolithic and oppressive. "
+            "Keep the exact same silhouette, drop shadow, and top-down perspective. The white/light background "
+            "area should remain white. This is a cliff ledge sprite for a dark fantasy boss arena in a "
+            "top-down 2D game."
+        ),
+        "boulder": (
+            "Using the provided image of a top-down boulder with shadow, change only the colors and surface "
+            "texture to look like scorched obsidian. Near-black fused stone with subtle blue-gray veining and "
+            "faint orange-red glow in the deepest cracks. Smooth, melted appearance. Keep the exact same shape, "
+            "shadow, and top-down perspective. The white/light background area should remain white. "
+            "This is a decorative boulder for a dark fantasy boss arena in a top-down 2D game."
+        ),
+        "stairs": (
+            "Using the provided image of stepped stone piles seen from top-down, change only the colors and "
+            "surface texture to look like scorched obsidian steps. Near-black fused stone blocks with a melted "
+            "appearance. Faint orange-red glow seeping between the steps. Keep the exact same shape, stacking, "
+            "shadow, and top-down perspective. The white/light background area should remain white. "
+            "This is a stairs sprite for a dark fantasy boss arena in a top-down 2D game."
+        ),
     },
 }
 
@@ -133,7 +229,29 @@ def slice_region(sheet: Image.Image, region: tuple) -> Image.Image:
     return sheet.crop((left, top, right, bottom))
 
 
-def post_process(image: Image.Image, target_size: int) -> Image.Image:
+def remove_white_background(data: np.ndarray, threshold: int = 220) -> np.ndarray:
+    """Make white/near-white pixels transparent, with feathered edges."""
+    white_mask = (data[:,:,0] > threshold) & (data[:,:,1] > threshold) & (data[:,:,2] > threshold)
+    data[white_mask, 3] = 0
+
+    # Feather near-white edges for smoother transition
+    near_white = (
+        (data[:,:,0] > threshold - 30) & (data[:,:,1] > threshold - 30) &
+        (data[:,:,2] > threshold - 30) & ~white_mask
+    )
+    if near_white.any():
+        brightness = (
+            data[near_white, 0].astype(float) + data[near_white, 1].astype(float) +
+            data[near_white, 2].astype(float)
+        ) / 3
+        alpha_factor = 1.0 - (brightness - (threshold - 30)) / 30.0
+        alpha_factor = np.clip(alpha_factor, 0, 1)
+        data[near_white, 3] = (alpha_factor * 255).astype(np.uint8)
+
+    return data
+
+
+def post_process(image: Image.Image, target_size: int, remove_bg: bool = False) -> Image.Image:
     """Fill Gemini watermark region with average border color, then resize."""
     image = image.convert("RGBA")
     data = np.array(image)
@@ -147,6 +265,11 @@ def post_process(image: Image.Image, target_size: int) -> Image.Image:
         border_left = data[h - WATERMARK_MARGIN:, w - WATERMARK_MARGIN - 1]
         avg_color = np.concatenate([border_top, border_left]).mean(axis=0).astype(np.uint8)
         data[h - WATERMARK_MARGIN:, w - WATERMARK_MARGIN:] = avg_color
+
+    # Remove white background for wall edge sprites
+    if remove_bg:
+        data = remove_white_background(data)
+
     image = Image.fromarray(data)
 
     # Resize to target size (step down gradually for best quality)
@@ -203,14 +326,27 @@ def generate_image(client, region_image: Image.Image, prompt: str, model: str) -
 
 def target_size_for(asset_type: str) -> int:
     """Return the final output pixel size for an asset type."""
-    return FLOOR_SIZE if asset_type == "floor" else WALL_EDGE_SIZE
+    if asset_type == "floor":
+        return FLOOR_SIZE
+    if asset_type == "wall_edge":
+        return WALL_EDGE_SIZE
+    return DEPTH_SIZE
+
+
+# Asset type -> filename prefix mapping
+ASSET_FILENAMES = {
+    "floor": "Floor",
+    "wall_edge": "WallEdge",
+    "cliff_edge": "CliffEdge",
+    "boulder": "Boulder",
+    "stairs": "Stairs",
+}
 
 
 def output_filename(asset_type: str, zone: str) -> str:
     """Return the final output filename for a zone/asset combo."""
-    if asset_type == "floor":
-        return f"Floor_{zone}.png"
-    return f"WallEdge_{zone}.png"
+    prefix = ASSET_FILENAMES.get(asset_type, asset_type.title())
+    return f"{prefix}_{zone}.png"
 
 
 def raw_filename(asset_type: str, zone: str) -> str:
@@ -264,17 +400,21 @@ def main():
         processed = 0
         for png_path in pngs:
             stem = png_path.stem  # e.g. floor_ZoneA_raw or wall_edge_ZoneA_raw
-            if stem.startswith("floor_"):
-                zone = stem.split("_")[1]  # floor_ZoneA_raw -> ZoneA
-                out_name = f"Floor_{zone}.png"
-                target_size = FLOOR_SIZE
-            elif stem.startswith("wall_edge_"):
-                zone = stem.split("_")[2]  # wall_edge_ZoneA_raw -> ZoneA
-                out_name = f"WallEdge_{zone}.png"
-                target_size = WALL_EDGE_SIZE
-            else:
+            # Parse: {asset_type}_{zone}_raw
+            # asset_type may contain underscores (wall_edge, cliff_edge)
+            parts = stem.rsplit("_raw", 1)[0]  # strip _raw suffix
+            asset_type = None
+            zone = None
+            for at in sorted(ASSET_FILENAMES.keys(), key=len, reverse=True):
+                if parts.startswith(at + "_"):
+                    asset_type = at
+                    zone = parts[len(at) + 1:]
+                    break
+            if asset_type is None or zone is None:
                 print(f"  [SKIP] {png_path.name} (unrecognized naming pattern)")
                 continue
+            out_name = output_filename(asset_type, zone)
+            target_size = target_size_for(asset_type)
 
             if zone not in ZONES:
                 print(f"  [SKIP] {png_path.name} (zone '{zone}' not in ZONES list)")
@@ -285,7 +425,8 @@ def main():
             out_path = zone_dir / out_name
 
             img = Image.open(png_path)
-            result = post_process(img, target_size)
+            is_floor = stem.startswith("floor_")
+            result = post_process(img, target_size, remove_bg=not is_floor)
             result.save(out_path)
             print(f"  [PP] {png_path.name} -> {out_path}")
             processed += 1
@@ -301,21 +442,29 @@ def main():
         print("ERROR: GEMINI_API_KEY environment variable not set")
         sys.exit(1)
 
-    # Load sprite sheet
-    sheet_path = SPRITESHEET_PATH
-    if not sheet_path.exists():
-        print(f"ERROR: Spritesheet not found: {sheet_path}")
-        sys.exit(1)
-
-    sheet = Image.open(sheet_path)
-    print(f"Loaded spritesheet: {sheet_path} ({sheet.size[0]}x{sheet.size[1]})")
+    # Load sprite sheets
+    sheets = {}
+    for key, path in SPRITESHEET_PATHS.items():
+        if not path.exists():
+            # Only error if we actually need this sheet
+            needed = any(REGIONS[a][0] == key for a in args.assets if a in REGIONS)
+            if needed:
+                print(f"ERROR: Spritesheet not found: {path}")
+                sys.exit(1)
+            continue
+        sheets[key] = Image.open(path)
+        print(f"Loaded spritesheet: {path} ({sheets[key].size[0]}x{sheets[key].size[1]})")
 
     # Slice regions up front
     region_images = {}
-    for asset_type, region in REGIONS.items():
-        sliced = slice_region(sheet, region)
+    for asset_type, region_def in REGIONS.items():
+        sheet_key = region_def[0]
+        region = region_def[1:]
+        if sheet_key not in sheets:
+            continue
+        sliced = slice_region(sheets[sheet_key], region)
         region_images[asset_type] = sliced
-        print(f"  Sliced region '{asset_type}': {region} -> {sliced.size[0]}x{sliced.size[1]}")
+        print(f"  Sliced region '{asset_type}' from {sheet_key}: {region} -> {sliced.size[0]}x{sliced.size[1]}")
 
     # Create output directories
     RAW_DIR.mkdir(parents=True, exist_ok=True)
@@ -382,7 +531,7 @@ def main():
             if args.no_post_process:
                 result.save(out_path)
             else:
-                processed = post_process(result, target_size)
+                processed = post_process(result, target_size, remove_bg=(asset_type != "floor"))
                 processed.save(out_path)
 
             print(f"  Final saved: {out_path} ({target_size}x{target_size})")

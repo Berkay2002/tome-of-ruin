@@ -6,9 +6,31 @@ using UnityEditor.SceneManagement;
 using UnityEngine.Rendering.Universal;
 using Cinemachine;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 public static class LevelGenerator
 {
+    // --- Prop placement configuration ---
+    // Which prop categories appear in each zone, and how many per room (min, max)
+    private static readonly Dictionary<string, (string[] categories, int minPerRoom, int maxPerRoom)> ZoneProps =
+        new Dictionary<string, (string[], int, int)>
+    {
+        { "ZoneA", (new[] { "Rock", "Ruin", "Plant", "ThornPlant", "Grave" }, 4, 8) },
+        { "ZoneB", (new[] { "Bones", "Grave", "PileOfSkulls", "DeadArm", "Crystal", "Rock" }, 5, 10) },
+        { "ZoneC", (new[] { "Grave", "Crystal", "ThornPlant", "Ruin", "Bones" }, 4, 8) },
+        { "BossArena", (new[] { "Rock", "Bones", "PileOfSkulls", "Crystal" }, 3, 6) },
+    };
+
+    // Detail categories scattered on floor (small debris)
+    private static readonly string[] DetailCategories = new[] { "Rock", "Bones" };
+    private const int DetailsPerRoom = 6;
+    private const float PropMinSpacing = 1.5f;   // Minimum distance between props
+    private const float PropWallMargin = 0.8f;    // Keep props away from walls
+    private const float DetailSortingOrder = -90;  // Between floor (-100) and player (0)
+    private const float PropSortingOrder = -50;    // Above details, below player
+    private const float WallSortingOrder = -80;    // Between floor and details
+    private const float WallTargetHeight = 0.6f;   // Wall strip height in world units
     [MenuItem("Tools/Generate Levels")]
     public static void GenerateAll()
     {
@@ -346,9 +368,7 @@ public static class LevelGenerator
         var roomObj = new GameObject($"Room_{name}");
         roomObj.transform.position = new Vector3(position.x, position.y, 0);
 
-        // --- Walls (EdgeCollider2D only) ---
-        // SpriteShapeController visuals deferred until art assets exist.
-        // For now, walls are invisible colliders — functional for prototyping.
+        // --- Walls (EdgeCollider2D + tiled wall sprites) ---
         var wallsObj = new GameObject("Walls");
         wallsObj.transform.SetParent(roomObj.transform, false);
 
@@ -358,6 +378,9 @@ public static class LevelGenerator
             edgePoints[i] = vertices[i];
         edgePoints[vertices.Length] = vertices[0]; // Close the loop
         edgeCollider.points = edgePoints;
+
+        // --- Wall Visuals (tiled sprites along edges) ---
+        CreateWallVisuals(wallsObj, zoneName, vertices);
 
         // --- Floor (polygon mesh matching room shape) ---
         var floorObj = new GameObject("Floor");
@@ -392,6 +415,10 @@ public static class LevelGenerator
         if (floorMat != null)
             meshRenderer.material = floorMat;
 
+        // --- Props and Details ---
+        ScatterProps(roomObj, zoneName, vertices);
+        ScatterDetails(roomObj, zoneName, vertices);
+
         // --- Camera Confiner ---
         var confinerObj = new GameObject("CameraConfiner");
         confinerObj.transform.SetParent(roomObj.transform, false);
@@ -407,6 +434,249 @@ public static class LevelGenerator
         var triggerCollider = triggerObj.AddComponent<BoxCollider2D>();
         triggerCollider.isTrigger = true;
         triggerCollider.size = bounds.size;
+    }
+
+    // ----------------------------------------------------------------
+    // Helper: Create wall visuals by tiling sprites along edges
+    // ----------------------------------------------------------------
+    private static void CreateWallVisuals(GameObject wallsParent, string zoneName, Vector2[] vertices)
+    {
+        string texPath = $"Assets/Art/LevelArt/{zoneName}/WallEdge_{zoneName}.png";
+        var wallSprite = AssetDatabase.LoadAssetAtPath<Sprite>(texPath);
+        if (wallSprite == null)
+        {
+            Debug.LogWarning($"LevelGenerator: Wall sprite not found: {texPath}");
+            return;
+        }
+
+        float spriteWorldWidth = wallSprite.rect.width / wallSprite.pixelsPerUnit;
+        float spriteWorldHeight = wallSprite.rect.height / wallSprite.pixelsPerUnit;
+
+        // Scale factor to shrink the sprite to a thin wall strip
+        float heightScale = WallTargetHeight / spriteWorldHeight;
+        float scaledWidth = spriteWorldWidth * heightScale; // Keep aspect ratio
+
+        for (int i = 0; i < vertices.Length; i++)
+        {
+            int next = (i + 1) % vertices.Length;
+            Vector2 start = vertices[i];
+            Vector2 end = vertices[next];
+            Vector2 dir = (end - start);
+            float edgeLength = dir.magnitude;
+            dir.Normalize();
+
+            float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+
+            // Tile scaled sprites along this edge
+            int tileCount = Mathf.Max(1, Mathf.CeilToInt(edgeLength / scaledWidth));
+            float tileWidth = edgeLength / tileCount;
+            float widthScale = tileWidth / spriteWorldWidth;
+
+            for (int t = 0; t < tileCount; t++)
+            {
+                float progress = (t + 0.5f) * tileWidth;
+                Vector2 pos = start + dir * progress;
+
+                // Place wall centered on the edge line
+                var tileObj = new GameObject($"WallTile_{i}_{t}");
+                tileObj.transform.SetParent(wallsParent.transform, false);
+                tileObj.transform.localPosition = new Vector3(pos.x, pos.y, 0);
+                tileObj.transform.localRotation = Quaternion.Euler(0, 0, angle);
+                tileObj.transform.localScale = new Vector3(widthScale, heightScale, 1f);
+
+                var sr = tileObj.AddComponent<SpriteRenderer>();
+                sr.sprite = wallSprite;
+                sr.sortingLayerName = "Default";
+                sr.sortingOrder = (int)WallSortingOrder;
+            }
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // Helper: Scatter Props in Room
+    // ----------------------------------------------------------------
+    private static void ScatterProps(GameObject roomObj, string zoneName, Vector2[] vertices)
+    {
+        if (!ZoneProps.ContainsKey(zoneName)) return;
+        var (categories, minPerRoom, maxPerRoom) = ZoneProps[zoneName];
+
+        var sprites = LoadZoneSprites(zoneName, categories);
+        if (sprites.Count == 0)
+        {
+            Debug.LogWarning($"LevelGenerator: No prop sprites found for {zoneName}. Run 'python tools/import_props.py' first.");
+            return;
+        }
+
+        var propsParent = new GameObject("Props");
+        propsParent.transform.SetParent(roomObj.transform, false);
+
+        int count = Random.Range(minPerRoom, maxPerRoom + 1);
+        var placedPositions = new List<Vector2>();
+
+        for (int i = 0; i < count * 3 && placedPositions.Count < count; i++) // Try 3x for spacing
+        {
+            Vector2 pos = RandomPointInPolygon(vertices, PropWallMargin);
+            if (pos == Vector2.zero && !IsPointInPolygon(Vector2.zero, vertices, PropWallMargin))
+                continue;
+
+            // Check minimum spacing
+            bool tooClose = false;
+            foreach (var existing in placedPositions)
+            {
+                if (Vector2.Distance(pos, existing) < PropMinSpacing)
+                {
+                    tooClose = true;
+                    break;
+                }
+            }
+            if (tooClose) continue;
+
+            placedPositions.Add(pos);
+            var sprite = sprites[Random.Range(0, sprites.Count)];
+            CreatePropObject(propsParent, sprite, pos, (int)PropSortingOrder);
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // Helper: Scatter Details (small debris) in Room
+    // ----------------------------------------------------------------
+    private static void ScatterDetails(GameObject roomObj, string zoneName, Vector2[] vertices)
+    {
+        var sprites = LoadZoneSprites(zoneName, DetailCategories);
+        if (sprites.Count == 0) return;
+
+        // Filter to only small sprites (16x16 and 32x32 props)
+        var smallSprites = sprites.Where(s => s.texture.width <= 32).ToList();
+        if (smallSprites.Count == 0) smallSprites = sprites;
+
+        var detailsParent = new GameObject("Details");
+        detailsParent.transform.SetParent(roomObj.transform, false);
+
+        for (int i = 0; i < DetailsPerRoom; i++)
+        {
+            Vector2 pos = RandomPointInPolygon(vertices, 0.3f);
+            var sprite = smallSprites[Random.Range(0, smallSprites.Count)];
+            CreatePropObject(detailsParent, sprite, pos, (int)DetailSortingOrder);
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // Helper: Load zone sprites from Props directory
+    // ----------------------------------------------------------------
+    private static List<Sprite> LoadZoneSprites(string zoneName, string[] categories)
+    {
+        var sprites = new List<Sprite>();
+        foreach (var category in categories)
+        {
+            string dir = $"Assets/Art/LevelArt/Props/{category}";
+            if (!Directory.Exists(dir)) continue;
+
+            var files = Directory.GetFiles(dir, $"*_{zoneName}_*.png");
+            foreach (var file in files)
+            {
+                string assetPath = file.Replace("\\", "/");
+                var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
+                if (sprite != null)
+                    sprites.Add(sprite);
+            }
+        }
+        return sprites;
+    }
+
+    // ----------------------------------------------------------------
+    // Helper: Create a prop SpriteRenderer object
+    // ----------------------------------------------------------------
+    private static void CreatePropObject(GameObject parent, Sprite sprite, Vector2 pos, int sortingOrder)
+    {
+        var obj = new GameObject(sprite.name);
+        obj.transform.SetParent(parent.transform, false);
+        obj.transform.localPosition = new Vector3(pos.x, pos.y, 0);
+
+        // Random rotation (0, 90, 180, 270) and flip for variety
+        float rotation = 90f * Random.Range(0, 4);
+        obj.transform.localRotation = Quaternion.Euler(0, 0, rotation);
+
+        var sr = obj.AddComponent<SpriteRenderer>();
+        sr.sprite = sprite;
+        sr.sortingLayerName = "Default";
+        sr.sortingOrder = sortingOrder;
+
+        // Normalize scale: target ~1.0-1.5 world units for props regardless of pixel size
+        // At 32ppu: 32px=1u, 64px=2u, 128px=4u, 256px=8u
+        float worldSize = sprite.rect.width / sprite.pixelsPerUnit;
+        float targetSize = 1.2f; // Desired world size for average prop
+        float baseScale = worldSize > targetSize ? targetSize / worldSize : 1f;
+        float scale = baseScale * Random.Range(0.8f, 1.2f);
+        obj.transform.localScale = new Vector3(
+            Random.value > 0.5f ? scale : -scale, // Random horizontal flip
+            scale,
+            1f
+        );
+    }
+
+    // ----------------------------------------------------------------
+    // Helper: Random point inside polygon (shrunk by margin)
+    // ----------------------------------------------------------------
+    private static Vector2 RandomPointInPolygon(Vector2[] polygon, float margin)
+    {
+        // Calculate bounds
+        var bounds = CalculateBounds(polygon);
+
+        // Try random points within bounds, reject if outside polygon
+        for (int attempt = 0; attempt < 50; attempt++)
+        {
+            float x = Random.Range(bounds.xMin + margin, bounds.xMax - margin);
+            float y = Random.Range(bounds.yMin + margin, bounds.yMax - margin);
+            var point = new Vector2(x, y);
+
+            if (IsPointInPolygon(point, polygon, margin))
+                return point;
+        }
+        return bounds.center; // Fallback to center
+    }
+
+    // ----------------------------------------------------------------
+    // Helper: Point-in-polygon test with wall margin
+    // ----------------------------------------------------------------
+    private static bool IsPointInPolygon(Vector2 point, Vector2[] polygon, float margin)
+    {
+        // Ray casting algorithm
+        bool inside = false;
+        int j = polygon.Length - 1;
+        for (int i = 0; i < polygon.Length; i++)
+        {
+            if ((polygon[i].y > point.y) != (polygon[j].y > point.y) &&
+                point.x < (polygon[j].x - polygon[i].x) * (point.y - polygon[i].y) /
+                (polygon[j].y - polygon[i].y) + polygon[i].x)
+            {
+                inside = !inside;
+            }
+            j = i;
+        }
+        if (!inside) return false;
+
+        // Check margin from edges
+        if (margin > 0)
+        {
+            for (int i = 0; i < polygon.Length; i++)
+            {
+                int next = (i + 1) % polygon.Length;
+                float dist = DistanceToSegment(point, polygon[i], polygon[next]);
+                if (dist < margin) return false;
+            }
+        }
+        return true;
+    }
+
+    // ----------------------------------------------------------------
+    // Helper: Distance from point to line segment
+    // ----------------------------------------------------------------
+    private static float DistanceToSegment(Vector2 p, Vector2 a, Vector2 b)
+    {
+        Vector2 ab = b - a;
+        float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / Vector2.Dot(ab, ab));
+        Vector2 closest = a + t * ab;
+        return Vector2.Distance(p, closest);
     }
 
     // ----------------------------------------------------------------
