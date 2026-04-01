@@ -4,7 +4,9 @@
 
 **Goal:** Add visual combat feedback — enemy hit flash, stagger tint+shake, death flash+fade, and player attack swing arc.
 
-**Architecture:** Two new MonoBehaviours: `EnemyVisualFeedback` (on enemies, subscribes to EnemyHealth events) and `AttackVisualFeedback` (on player, called by PlayerCombat). One shared WhiteFlash material via Shader Graph. Asset sprite for slash arc already exists at project root (`slash.png`).
+**Architecture:** Two new MonoBehaviours: `EnemyVisualFeedback` (on enemies, subscribes to EnemyHealth events) and `AttackVisualFeedback` (on player, called by PlayerCombat). One shared WhiteFlash material via custom URP shader. Slash arc sprite at project root (`slash.png`) — Task 1 moves it into place.
+
+**Prerequisite:** `slash.png` must exist at the project root before starting. If missing, generate it using the prompt in the spec and remove the black background before proceeding.
 
 **Tech Stack:** Unity 2022.3 LTS, URP 2D, C#, Shader Graph
 
@@ -18,7 +20,7 @@
 |--------|------|---------------|
 | Create | `Assets/Scripts/Combat/EnemyVisualFeedback.cs` | Hit flash, stagger tint+shake, death flash+fade on enemies |
 | Create | `Assets/Scripts/Combat/AttackVisualFeedback.cs` | Swing arc sprite display on player attacks |
-| Create | `Assets/Shaders/WhiteFlash.shadergraph` | Shader Graph: outputs white RGB, preserves sprite alpha |
+| Create | `Assets/Shaders/WhiteFlash.shader` | URP-compatible unlit shader: outputs white RGB, preserves sprite alpha |
 | Create | `Assets/Materials/WhiteFlash.mat` | Material using WhiteFlash shader, shared by all enemies |
 | Move | `slash.png` → `Assets/Sprites/Effects/SlashArc.png` | Slash arc sprite asset |
 | Modify | `Assets/Scripts/Enemies/EnemyStateMachine.cs:187-198,217-234` | Remove DeathFade coroutine, remove StartCoroutine call from SetState |
@@ -35,9 +37,11 @@
 **Files:**
 - Move: `slash.png` → `Assets/Sprites/Effects/SlashArc.png`
 
-- [ ] **Step 1: Create Effects directory and move sprite**
+- [ ] **Step 1: Verify sprite exists, create directory, and move**
 
 ```bash
+# Fail loudly if slash.png is missing
+test -f slash.png || { echo "ERROR: slash.png not found at project root. Generate it first (see spec for prompt)."; exit 1; }
 mkdir -p Assets/Sprites/Effects
 mv slash.png Assets/Sprites/Effects/SlashArc.png
 ```
@@ -238,8 +242,9 @@ public class EnemyVisualFeedback : MonoBehaviour
     {
         _sr = GetComponent<SpriteRenderer>();
         _health = GetComponent<EnemyHealth>();
-        _originalMaterial = _sr.material;
+        _originalMaterial = _sr.sharedMaterial;
         _originalColor = _sr.color;
+        _originalLocalPos = transform.localPosition;
     }
 
     private void Start()
@@ -279,20 +284,21 @@ public class EnemyVisualFeedback : MonoBehaviour
         _isDead = true;
         if (_flashCoroutine != null) StopCoroutine(_flashCoroutine);
         if (_staggerCoroutine != null) StopCoroutine(_staggerCoroutine);
-        _sr.material = _originalMaterial;
+        _sr.sharedMaterial = _originalMaterial;
         _sr.color = _originalColor;
+        transform.localPosition = _originalLocalPos;
         StartCoroutine(DeathRoutine());
     }
 
     private IEnumerator HitFlashRoutine(float duration)
     {
         if (whiteFlashMaterial != null)
-            _sr.material = whiteFlashMaterial;
+            _sr.sharedMaterial = whiteFlashMaterial;
 
         yield return new WaitForSeconds(duration);
 
         if (!_isDead)
-            _sr.material = _originalMaterial;
+            _sr.sharedMaterial = _originalMaterial;
 
         _flashCoroutine = null;
     }
@@ -322,7 +328,7 @@ public class EnemyVisualFeedback : MonoBehaviour
     {
         // Death flash
         if (whiteFlashMaterial != null)
-            _sr.material = whiteFlashMaterial;
+            _sr.sharedMaterial = whiteFlashMaterial;
 
         yield return new WaitForSeconds(deathFlashDuration);
 
@@ -537,7 +543,19 @@ git commit -m "refactor: BossController death delegates visual+destroy to EnemyV
 
 - [ ] **Step 1: Add ShowSwing call in TryAttack**
 
-In `Assets/Scripts/Player/PlayerCombat.cs`, the current `TryAttack` method lines 58-68 are:
+In `Assets/Scripts/Player/PlayerCombat.cs`, first add a cached field. After `private AttackData _currentAttackData;` (line 19), add:
+
+```csharp
+    private AttackVisualFeedback _swingVfx;
+```
+
+Then in the existing `Awake` method (lines 21-26), add at the end:
+
+```csharp
+        _swingVfx = GetComponent<AttackVisualFeedback>();
+```
+
+Then in the `TryAttack` method, the current lines 58-68 are:
 
 ```csharp
         var result = _executor.Attack();
@@ -567,9 +585,8 @@ Replace with:
         ApplyAttackMovement(result.attackData);
         DealDamage(result);
 
-        var swingVfx = GetComponent<AttackVisualFeedback>();
-        if (swingVfx != null)
-            swingVfx.ShowSwing(_controller.FacingDirection, _attackAnimTimer, attackRange);
+        if (_swingVfx != null)
+            _swingVfx.ShowSwing(_controller.FacingDirection, _attackAnimTimer, attackRange);
     }
 ```
 
@@ -636,7 +653,29 @@ Replace with:
 
 - [ ] **Step 2: Add EnemyVisualFeedback to CreateEnemyPrefab**
 
-In `CreateEnemyPrefab` (line 98), after `AssignPlaceholderSprite(go, name);` (line 136) and before the `PrefabUtility.SaveAsPrefabAsset` call (line 137), add:
+In `CreateEnemyPrefab` (line 98), first fix the pre-existing bug where `EnemyHealth.data` is never assigned. Change line 119 from:
+
+```csharp
+        go.AddComponent<EnemyHealth>();
+```
+
+To:
+
+```csharp
+        var health = go.AddComponent<EnemyHealth>();
+```
+
+Then in the existing `if (enemyData != null)` block (lines 124-125), also wire health data:
+
+```csharp
+        if (enemyData != null)
+        {
+            sm.data = enemyData;
+            health.data = enemyData;
+        }
+```
+
+Then after `AssignPlaceholderSprite(go, name);` (line 136) and before the `PrefabUtility.SaveAsPrefabAsset` call (line 137), add:
 
 ```csharp
         // Visual feedback
@@ -796,21 +835,26 @@ public class EnemyVisualFeedbackTests
     [UnityTest]
     public IEnumerator HitFlash_SwapsMaterial_ThenRestores()
     {
+        // Wait one frame so Start() runs and event subscriptions are active
+        yield return null;
+
         _health.TakeDamage(10f, HarmonyLevel.None);
 
         // Material should be flash material immediately
-        Assert.AreEqual(_flashMat, _sr.material);
+        Assert.AreEqual(_flashMat, _sr.sharedMaterial);
 
         // Wait for flash to end
         yield return new WaitForSeconds(0.15f);
 
         // Material should be restored
-        Assert.AreNotEqual(_flashMat, _sr.material);
+        Assert.AreNotEqual(_flashMat, _sr.sharedMaterial);
     }
 
     [UnityTest]
     public IEnumerator HitFlash_RapidHits_RestartTimer()
     {
+        yield return null; // Let Start() run
+
         _health.TakeDamage(5f, HarmonyLevel.None);
         yield return new WaitForSeconds(0.05f);
 
@@ -818,17 +862,19 @@ public class EnemyVisualFeedbackTests
         _health.TakeDamage(5f, HarmonyLevel.None);
 
         // Should still be flashing
-        Assert.AreEqual(_flashMat, _sr.material);
+        Assert.AreEqual(_flashMat, _sr.sharedMaterial);
 
         // Wait for second flash to end
         yield return new WaitForSeconds(0.15f);
 
-        Assert.AreNotEqual(_flashMat, _sr.material);
+        Assert.AreNotEqual(_flashMat, _sr.sharedMaterial);
     }
 
     [UnityTest]
     public IEnumerator Stagger_AppliesTint_ThenRestores()
     {
+        yield return null; // Let Start() run
+
         Color originalColor = _sr.color;
 
         // Deal enough damage to trigger stagger
@@ -853,10 +899,12 @@ public class EnemyVisualFeedbackTests
     [UnityTest]
     public IEnumerator Death_FlashesThenFades_ThenDestroysObject()
     {
+        yield return null; // Let Start() run
+
         _health.TakeDamage(150f, HarmonyLevel.None);
 
         // Should be flashing white
-        Assert.AreEqual(_flashMat, _sr.material);
+        Assert.AreEqual(_flashMat, _sr.sharedMaterial);
 
         // Wait past death flash
         yield return new WaitForSeconds(0.2f);
@@ -872,10 +920,14 @@ public class EnemyVisualFeedbackTests
     }
 
     [Test]
-    public void Awake_CachesOriginalMaterial()
+    public void Setup_ComponentsWiredCorrectly()
     {
-        // Original material should be cached (not the flash material)
-        Assert.AreNotEqual(_flashMat, _sr.material);
+        // Verify the test setup produces a valid enemy with all required components
+        Assert.IsNotNull(_vfx);
+        Assert.IsNotNull(_health);
+        Assert.IsNotNull(_sr);
+        Assert.AreEqual(100f, _health.CurrentHealth, 0.01f);
+        Assert.AreEqual(_flashMat, _vfx.whiteFlashMaterial);
     }
 }
 ```
@@ -1039,4 +1091,37 @@ In Unity Editor:
 ```bash
 git add Assets/Shaders/ Assets/Materials/ Assets/Prefabs/
 git commit -m "asset: generated WhiteFlash shader/material and updated prefabs"
+```
+
+---
+
+### Task 12: Update CLAUDE.md setup instructions
+
+**Files:**
+- Modify: `CLAUDE.md`
+
+- [ ] **Step 1: Add Generate Materials step**
+
+In `CLAUDE.md`, in the "First-Time Unity Setup" section, insert a new step between steps 2 and 3. The current steps 2-3 are:
+
+```
+2. Run **Tools > Generate Data Assets** — creates all SOs (attacks, combo books, enemies, harmony table)
+3. Run **Tools > Generate Prefabs** — creates Player, 4 enemies, Projectile, 4 interactables
+```
+
+Replace with:
+
+```
+2. Run **Tools > Generate Data Assets** — creates all SOs (attacks, combo books, enemies, harmony table)
+3. Run **Tools > Generate Materials** — creates WhiteFlash shader and material
+4. Run **Tools > Generate Prefabs** — creates Player, 4 enemies, Boss, Projectile, 4 interactables
+```
+
+Renumber all subsequent steps (old 4→5, old 5→6, etc.).
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add CLAUDE.md
+git commit -m "docs: add Generate Materials step to CLAUDE.md setup instructions"
 ```
