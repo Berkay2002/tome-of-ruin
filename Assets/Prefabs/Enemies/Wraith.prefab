@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 5525076888080841583}
   - component: {fileID: 5071864878049429070}
   - component: {fileID: 3513455045174838731}
+  - component: {fileID: 5090004145182906605}
   m_Layer: 3
   m_Name: Wraith
   m_TagString: Enemy
@@ -173,7 +174,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7750473dc164d784c85449487bbc05e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  data: {fileID: 0}
+  data: {fileID: 11400000, guid: 828bdc161b86fe74bb79339abd81f45b, type: 2}
 --- !u!114 &5071864878049429070
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207,3 +208,21 @@ MonoBehaviour:
   retreatDistance: 3
   projectilePrefab: {fileID: 0}
   projectileSpeed: 8
+--- !u!114 &5090004145182906605
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 978561541768012290}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 558ea7fe5a7b6b54b882761d4af19dae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  flashDuration: 0.1
+  whiteFlashMaterial: {fileID: 0}
+  staggerTintColor: {r: 1, g: 0.9, b: 0.4, a: 1}
+  shakeIntensity: 0.05
+  deathFlashDuration: 0.15
+  deathFadeDuration: 0.5
