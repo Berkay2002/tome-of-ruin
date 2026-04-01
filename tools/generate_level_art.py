@@ -136,10 +136,13 @@ def post_process(image: Image.Image, target_size: int) -> Image.Image:
     h, w = data.shape[:2]
 
     # Fill watermark region with average color of surrounding border (NOT transparent)
-    border_top = data[h - WATERMARK_MARGIN - 1, w - WATERMARK_MARGIN:]
-    border_left = data[h - WATERMARK_MARGIN:, w - WATERMARK_MARGIN - 1]
-    avg_color = np.concatenate([border_top, border_left]).mean(axis=0).astype(np.uint8)
-    data[h - WATERMARK_MARGIN:, w - WATERMARK_MARGIN:] = avg_color
+    if min(h, w) < WATERMARK_MARGIN * 2:
+        print(f"  WARNING: Image too small ({w}x{h}) for watermark removal — skipping fill")
+    else:
+        border_top = data[h - WATERMARK_MARGIN - 1, w - WATERMARK_MARGIN:]
+        border_left = data[h - WATERMARK_MARGIN:, w - WATERMARK_MARGIN - 1]
+        avg_color = np.concatenate([border_top, border_left]).mean(axis=0).astype(np.uint8)
+        data[h - WATERMARK_MARGIN:, w - WATERMARK_MARGIN:] = avg_color
     image = Image.fromarray(data)
 
     # Resize to target size (step down gradually for best quality)
@@ -269,6 +272,10 @@ def main():
                 print(f"  [SKIP] {png_path.name} (unrecognized naming pattern)")
                 continue
 
+            if zone not in ZONES:
+                print(f"  [SKIP] {png_path.name} (zone '{zone}' not in ZONES list)")
+                continue
+
             zone_dir = OUTPUT_BASE / zone
             zone_dir.mkdir(parents=True, exist_ok=True)
             out_path = zone_dir / out_name
@@ -348,7 +355,6 @@ def main():
                 print(f"  Prompt: {prompt[:120]}...")
                 print(f"  Raw -> {raw_path}")
                 print(f"  Final -> {out_path} ({target_size}x{target_size})")
-                total_generated += 1
                 continue
 
             # Rate limiting: delay between API calls (skip before first call)
