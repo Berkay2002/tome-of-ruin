@@ -366,12 +366,12 @@ public static class LevelGenerator
         shapeController.splineDetail = 4;
         shapeController.autoUpdateCollider = true;
 
-        // Load and assign SpriteShapeProfile
-        var profile = AssetDatabase.LoadAssetAtPath<SpriteShapeProfile>($"Assets/Data/SpriteShapeProfile_{zoneName}.asset");
+        // Load and assign SpriteShape profile
+        var profile = AssetDatabase.LoadAssetAtPath<SpriteShape>($"Assets/Data/SpriteShapeProfile_{zoneName}.asset");
         if (profile != null)
             shapeController.spriteShape = profile;
         else
-            Debug.LogWarning($"LevelGenerator: SpriteShapeProfile not found for {zoneName}. Run Tools > Generate SpriteShape Profiles first.");
+            Debug.LogWarning($"LevelGenerator: SpriteShape not found for {zoneName}. Run Tools > Generate SpriteShape Profiles first.");
 
         // Ensure EdgeCollider2D is present
         if (wallsObj.GetComponent<EdgeCollider2D>() == null)

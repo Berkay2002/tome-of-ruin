@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEngine.U2D;
 using System.IO;
 
-public static class SpriteShapeProfileGenerator
+public static class SpriteShapeGenerator
 {
     private static readonly (string name, Color color)[] Zones = new[]
     {
@@ -19,7 +19,7 @@ public static class SpriteShapeProfileGenerator
     {
         if (Application.isPlaying)
         {
-            Debug.LogWarning("SpriteShapeProfileGenerator: Cannot run in Play Mode.");
+            Debug.LogWarning("SpriteShapeGenerator: Cannot run in Play Mode.");
             return;
         }
 
@@ -33,12 +33,12 @@ public static class SpriteShapeProfileGenerator
             EnsureDirectory(zoneDir);
 
             Sprite edgeSprite = CreateWallEdgeSprite(zone.name, zoneDir, zone.color);
-            CreateSpriteShapeProfile(zone.name, edgeSprite);
+            CreateSpriteShape(zone.name, edgeSprite);
         }
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
-        Debug.Log("SpriteShapeProfileGenerator: Done — per-zone SpriteShapeProfiles created.");
+        Debug.Log("SpriteShapeGenerator: Done — per-zone SpriteShapes created.");
     }
 
     private static Sprite CreateWallEdgeSprite(string zoneName, string zoneDir, Color color)
@@ -73,18 +73,17 @@ public static class SpriteShapeProfileGenerator
         return AssetDatabase.LoadAssetAtPath<Sprite>(texPath);
     }
 
-    private static void CreateSpriteShapeProfile(string zoneName, Sprite edgeSprite)
+    private static void CreateSpriteShape(string zoneName, Sprite edgeSprite)
     {
         string profilePath = $"Assets/Data/SpriteShapeProfile_{zoneName}.asset";
         if (File.Exists(profilePath))
             return;
 
-        var profile = ScriptableObject.CreateInstance<SpriteShapeProfile>();
-        profile.fillPixelsPerUnit = 100;
+        var profile = ScriptableObject.CreateInstance<SpriteShape>();
         profile.fillOffset = 0f;
 
         // Attempt to assign the edge sprite to existing angle ranges.
-        // The SpriteShapeProfile ships with a default set of angle ranges; we
+        // The SpriteShape ships with a default set of angle ranges; we
         // iterate them and assign our wall-edge sprite to each one.  If the API
         // changes or the list is empty we fall through gracefully and log a note.
         var ranges = profile.angleRanges;
@@ -98,11 +97,11 @@ public static class SpriteShapeProfileGenerator
                 range.sprites.Add(edgeSprite);
                 ranges[i] = range;
             }
-            Debug.Log($"SpriteShapeProfileGenerator: Assigned edge sprite to {ranges.Count} angle range(s) on {profilePath}.");
+            Debug.Log($"SpriteShapeGenerator: Assigned edge sprite to {ranges.Count} angle range(s) on {profilePath}.");
         }
         else
         {
-            Debug.Log($"SpriteShapeProfileGenerator: No angle ranges found on new profile for {zoneName}. " +
+            Debug.Log($"SpriteShapeGenerator: No angle ranges found on new profile for {zoneName}. " +
                       "Assign the WallEdge sprite to angle ranges manually in the Inspector.");
         }
 
