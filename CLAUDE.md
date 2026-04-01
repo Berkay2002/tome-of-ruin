@@ -21,6 +21,14 @@ Unity 2022.3 LTS, URP 2D, C#, Cinemachine, SpriteShape, NavMeshPlus, Unity Test 
 - Use `FindObjectOfType<T>()` — `FindFirstObjectByType<T>()` does NOT exist in 2022.3
 - Use `Rigidbody2D.freezeRotation` — not `constraints` enum
 
+## Unity 2D Rendering Gotchas
+
+- `SpriteRenderer` needs `.sprite` assigned — a `.material` alone renders a colored rectangle, not the texture
+- `MeshRenderer` in 2D: set `sortingLayerName` and `sortingOrder` explicitly — defaults to Default/0 which renders on top of sprites
+- Polygon triangulation (ear-clipping) requires CCW winding — detect via signed area and reverse if CW
+- SpriteShapeController causes editor hangs — currently disabled, walls use EdgeCollider2D only
+- Editor generator `File.Exists` guards prevent texture refresh — generators must update references on existing assets, not just skip
+
 ## Code Style
 
 - One class/enum per file (small related enums can share a file, e.g. `AttackTag.cs`)
@@ -57,6 +65,15 @@ Unity 2022.3 LTS, URP 2D, C#, Cinemachine, SpriteShape, NavMeshPlus, Unity Test 
 - **Small/focused scope** — prototype-first mentality, don't over-engineer
 - **AI-driven development** — minimize human interaction, maximize what agents can generate reliably
 - **AI-generated art** — sprites and assets are AI-generated, 3/4 top-down perspective, dark desaturated palette
+
+## Gemini Image Generation
+
+- Model: `gemini-3-pro-image-preview` — use for asset generation (has thinking process, up to 4K)
+- Resolutions: 1K/2K/4K only (no 512). 2K costs same tokens as 1K — always prefer 2K+
+- Must specify `image_size` explicitly when input image is small — Gemini defaults to matching input size
+- Content order: `[image, prompt]` (image first) for style transfer / editing
+- Watermark: Gemini star in bottom-right — fill with average border color (not transparent) for opaque tiles
+- Scripts: `tools/generate_player_sprites.py` (characters), `tools/generate_level_art.py` (level textures)
 
 ## Design References
 
