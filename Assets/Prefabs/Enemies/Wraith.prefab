@@ -221,7 +221,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   flashDuration: 0.1
-  whiteFlashMaterial: {fileID: 0}
+  whiteFlashMaterial: {fileID: 2100000, guid: 2601194dda8d0014d8ae1253c43ecb29, type: 2}
   staggerTintColor: {r: 1, g: 0.9, b: 0.4, a: 1}
   shakeIntensity: 0.05
   deathFlashDuration: 0.15
