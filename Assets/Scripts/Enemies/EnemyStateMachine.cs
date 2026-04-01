@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 
 public enum EnemyState
@@ -193,7 +192,6 @@ public class EnemyStateMachine : MonoBehaviour
         {
             _rb.velocity = Vector2.zero;
             GetComponent<Collider2D>().enabled = false;
-            StartCoroutine(DeathFade());
         }
     }
 
@@ -214,22 +212,4 @@ public class EnemyStateMachine : MonoBehaviour
         }
     }
 
-    private IEnumerator DeathFade()
-    {
-        var sr = GetComponent<SpriteRenderer>();
-        if (sr == null) yield break;
-
-        float duration = 0.5f;
-        float elapsed = 0f;
-        Color original = sr.color;
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            sr.color = new Color(original.r, original.g, original.b, 1f - (elapsed / duration));
-            yield return null;
-        }
-
-        Destroy(gameObject);
-    }
 }
