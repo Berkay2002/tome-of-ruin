@@ -17,12 +17,14 @@ public class PlayerCombat : MonoBehaviour
     private float _attackAnimTimer;
     private bool _attackBuffered;
     private AttackData _currentAttackData;
+    private AttackVisualFeedback _swingVfx;
 
     private void Awake()
     {
         _controller = GetComponent<PlayerController>();
         _executor = GetComponent<ComboExecutor>();
         _rb = GetComponent<Rigidbody2D>();
+        _swingVfx = GetComponent<AttackVisualFeedback>();
     }
 
     private void Update()
@@ -65,6 +67,9 @@ public class PlayerCombat : MonoBehaviour
 
         ApplyAttackMovement(result.attackData);
         DealDamage(result);
+
+        if (_swingVfx != null)
+            _swingVfx.ShowSwing(_controller.FacingDirection, _attackAnimTimer, attackRange);
     }
 
     public bool TryDodgeCancel()
