@@ -86,21 +86,22 @@ The API supports explicit resolution and aspect ratio control via `generationCon
 ```python
 response = client.models.generate_content(
     model=MODEL,
-    contents=[prompt, region_image],
+    contents=[region_image, prompt],   # image first, then text (matches style transfer pattern)
     config=types.GenerateContentConfig(
         response_modalities=["TEXT", "IMAGE"],
         image_config=types.ImageConfig(
-            image_size="1K",       # "512", "1K", "2K", "4K"
+            image_size="1K",       # "1K", "2K", "4K" (3 Pro has no "512" option)
             aspect_ratio="1:1",
         ),
     ),
 )
 ```
 
-- **Floor textures:** Request `imageSize="1K"` (1024x1024), aspect ratio `"1:1"`
-- **Wall edge sprites:** Request `imageSize="512"` (512x512), aspect ratio `"1:1"`
+- **Both floors and wall edges:** Request `imageSize="1K"` (1024x1024), aspect ratio `"1:1"`
+- **Wall edges** are resized down to 512x512 in post-processing
+- **Important:** The model defaults to matching output size to input size. Since our input is a ~128x128 crop, we must specify `image_size="1K"` explicitly or Gemini may output a small image.
 
-This requests the target resolution directly from Gemini, minimizing post-processing resize artifacts.
+Prompt style follows the Gemini style transfer pattern: *"Transform the provided [subject] into [style]. Preserve the original composition but render it with [stylistic elements]."* Be hyper-specific about the desired modifications — describe materials, surface details, and color palette explicitly.
 
 ### Pipeline Steps
 
@@ -111,13 +112,13 @@ This requests the target resolution directly from Gemini, minimizing post-proces
    a. Check if Floor_{Zone}.png exists — skip unless --force
    b. Send floor region + zone floor prompt to Gemini (imageSize="1K")
    c. Save raw output to Assets/Art/LevelArt/raw/
-   d. Post-process: remove watermark on raw output
-   e. Save to Assets/Art/LevelArt/{Zone}/Floor_{Zone}.png
+   d. Post-process: remove watermark on raw 1024x1024 output
+   e. Save to Assets/Art/LevelArt/{Zone}/Floor_{Zone}.png (1024x1024)
    f. Check if WallEdge_{Zone}.png exists — skip unless --force
-   g. Send wall_edge region + zone wall prompt to Gemini (imageSize="512")
+   g. Send wall_edge region + zone wall prompt to Gemini (imageSize="1K")
    h. Save raw output to Assets/Art/LevelArt/raw/
-   i. Post-process: remove watermark on raw output
-   j. Save to Assets/Art/LevelArt/{Zone}/WallEdge_{Zone}.png
+   i. Post-process: remove watermark on raw 1024x1024, resize to 512x512
+   j. Save to Assets/Art/LevelArt/{Zone}/WallEdge_{Zone}.png (512x512)
    k. Brief delay (2s) between API calls for rate limiting
 4. Print summary
 ```
