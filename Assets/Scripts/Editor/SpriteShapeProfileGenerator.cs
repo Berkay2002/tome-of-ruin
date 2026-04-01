@@ -82,15 +82,15 @@ public static class SpriteShapeGenerator
             var existing = AssetDatabase.LoadAssetAtPath<SpriteShape>(profilePath);
             if (existing != null && edgeSprite != null)
             {
-                var ranges = existing.angleRanges;
-                if (ranges != null && ranges.Count > 0)
+                var existingRanges = existing.angleRanges;
+                if (existingRanges != null && existingRanges.Count > 0)
                 {
-                    for (int i = 0; i < ranges.Count; i++)
+                    for (int i = 0; i < existingRanges.Count; i++)
                     {
-                        var range = ranges[i];
-                        range.sprites.Clear();
-                        range.sprites.Add(edgeSprite);
-                        ranges[i] = range;
+                        var r = existingRanges[i];
+                        r.sprites.Clear();
+                        r.sprites.Add(edgeSprite);
+                        existingRanges[i] = r;
                     }
                     EditorUtility.SetDirty(existing);
                 }
