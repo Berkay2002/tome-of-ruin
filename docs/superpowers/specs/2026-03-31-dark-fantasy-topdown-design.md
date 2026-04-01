@@ -162,10 +162,9 @@ Assets/
 │   └── UI/
 ├── Art/
 │   ├── Sprites/        # AI-generated character/enemy/item sprites
-│   ├── Tilesets/       # AI-generated tileset per zone
+│   ├── LevelArt/       # Per-zone: edge sprites, corner sprites, floor textures, normal maps
 │   └── VFX/            # Slash effects, dodge trail, combo particles
 ├── Audio/              # SFX and ambient
-└── Tilemaps/           # Tilemap palettes per zone
 ```
 
 ### State Machines
@@ -186,11 +185,13 @@ Implemented as enum + switch — no state machine frameworks.
   - Cleared zones (B done, C done)
 - Scene transitions via trigger colliders at zone connections — fade to black, load next scene, place player at entry point
 
-### Tilemap
+### Level Geometry
 
-- Unity Tilemap with layers: ground, walls, decoration
-- Collision via Tilemap Collider 2D + Composite Collider 2D
-- One tileset palette per zone
+- SpriteShape-based polygon rooms with EdgeCollider2D for wall collision
+- Floor visuals via SpriteRenderer with world-space tiling material
+- One SpriteShapeProfile per zone for wall theming
+- NavMeshPlus for enemy pathfinding (baked from wall colliders)
+- See `docs/superpowers/specs/2026-04-01-level-geometry-design.md` for full details
 
 ### Camera
 
@@ -212,7 +213,7 @@ Implemented as enum + switch — no state machine frameworks.
 - Dark fantasy with desaturated palette — deep purples, greys, muted greens, accented with warm firelight
 - 3/4 top-down perspective (Link to the Past / Souls-like)
 - AI-generated sprites with consistent style prompts for cohesion
-- Target resolution: 16x16 or 32x32 pixel grid for tiles, larger for characters/bosses
+- Wall edge sprites: 512x512, floor textures: 1024x1024, character/boss sprites: larger as needed
 
 ### Zone Visual Identity
 

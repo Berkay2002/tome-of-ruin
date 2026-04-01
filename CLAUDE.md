@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project
 
 **Tome of Ruin** — dark fantasy top-down 2D action game.
-Unity 2022.3 LTS, URP 2D, C#, Cinemachine, Tilemap, Unity Test Framework (NUnit).
+Unity 2022.3 LTS, URP 2D, C#, Cinemachine, SpriteShape, NavMeshPlus, Unity Test Framework (NUnit).
 
 ## Architecture
 
@@ -34,12 +34,15 @@ Unity 2022.3 LTS, URP 2D, C#, Cinemachine, Tilemap, Unity Test Framework (NUnit)
 1. Open project folder in **Unity 2022.3 LTS** (URP template)
 2. Run **Tools > Generate Data Assets** — creates all SOs (attacks, combo books, enemies, harmony table)
 3. Run **Tools > Generate Materials** — creates WhiteFlash shader and material
-4. Run **Tools > Generate Prefabs** — creates Player, 4 enemies, Boss, Projectile, 4 interactables
-5. Run **Tools > Generate Scenes** — creates ZoneA, ZoneB, ZoneC, BossArena, MainMenu
-6. File > Build Settings — add all 5 scenes (MainMenu, ZoneA, ZoneB, ZoneC, BossArena)
-7. Edit > Project Settings > Tags and Layers — add `"Enemy"` tag and `"Enemy"` layer
-8. On Player prefab: set `PlayerCombat.enemyLayer` to the Enemy layer
-9. On Player prefab: assign `HarmonyTable` asset to `ComboExecutor.harmonyTable`
+4. Run **Tools > Generate SpriteShape Profiles** — creates per-zone wall profiles
+5. Run **Tools > Generate Floor Materials** — creates per-zone floor textures and materials
+6. Run **Tools > Generate Prefabs** — creates Player, 4 enemies, Boss, Projectile, 4 interactables
+7. Run **Tools > Generate Levels** — creates ZoneA, ZoneB, ZoneC, BossArena with SpriteShape rooms
+8. Run **Tools > Generate Scenes** — creates MainMenu
+9. File > Build Settings — add all 5 scenes (MainMenu, ZoneA, ZoneB, ZoneC, BossArena)
+10. Edit > Project Settings > Tags and Layers — add `"Enemy"` tag and `"Enemy"` layer
+11. On Player prefab: set `PlayerCombat.enemyLayer` to the Enemy layer
+12. On Player prefab: assign `HarmonyTable` asset to `ComboExecutor.harmonyTable`
 
 ## Testing
 
