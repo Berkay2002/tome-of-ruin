@@ -156,8 +156,13 @@ def post_process(image: Image.Image, target_size: int) -> Image.Image:
     data = np.array(image)
     h, w = data.shape[:2]
 
-    # Clear Gemini watermark in bottom-right corner
-    data[h - WATERMARK_MARGIN:, w - WATERMARK_MARGIN:] = [0, 0, 0, 0]
+    # Fill Gemini watermark region with average color of surrounding area
+    # (transparent fill would create a visible hole on opaque tiles)
+    wm_region = data[h - WATERMARK_MARGIN:, w - WATERMARK_MARGIN:]
+    border_top = data[h - WATERMARK_MARGIN - 1, w - WATERMARK_MARGIN:]
+    border_left = data[h - WATERMARK_MARGIN:, w - WATERMARK_MARGIN - 1]
+    avg_color = np.concatenate([border_top, border_left]).mean(axis=0).astype(np.uint8)
+    data[h - WATERMARK_MARGIN:, w - WATERMARK_MARGIN:] = avg_color
 
     image = Image.fromarray(data)
 
@@ -417,17 +422,20 @@ Replace the placeholder content in `main()` (everything after `print()` at the e
         print(f"Post-processing {len(pngs)} images from {RAW_DIR}")
         for png_path in pngs:
             img = Image.open(png_path)
-            # Determine target size from filename
-            if "floor_" in png_path.name:
-                target_size = FLOOR_SIZE
-            else:
-                target_size = WALL_EDGE_SIZE
-            # Determine zone from filename (e.g., floor_ZoneA_raw.png -> ZoneA)
-            zone = png_path.stem.split("_")[1]
+            # Parse filename to determine asset type, zone, and target size
+            # floor_ZoneA_raw.png -> floor, ZoneA
+            # wall_edge_ZoneA_raw.png -> wall_edge, ZoneA
             if png_path.stem.startswith("floor_"):
+                zone = png_path.stem.split("_")[1]  # floor_ZoneA_raw -> ZoneA
                 out_name = f"Floor_{zone}.png"
-            else:
+                target_size = FLOOR_SIZE
+            elif png_path.stem.startswith("wall_edge_"):
+                zone = png_path.stem.split("_")[2]  # wall_edge_ZoneA_raw -> ZoneA
                 out_name = f"WallEdge_{zone}.png"
+                target_size = WALL_EDGE_SIZE
+            else:
+                print(f"  [SKIP] {png_path.name} (unrecognized naming pattern)")
+                continue
             out_path = OUTPUT_BASE / zone / out_name
             processed = post_process(img, target_size)
             processed.save(out_path)
