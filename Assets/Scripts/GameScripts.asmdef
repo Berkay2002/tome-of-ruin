@@ -3,7 +3,9 @@
     "rootNamespace": "",
     "references": [
         "Unity.TextMeshPro",
-        "Cinemachine"
+        "Cinemachine",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.AI.Navigation"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

@@ -3,7 +3,10 @@
     "rootNamespace": "",
     "references": [
         "GameScripts",
-        "Cinemachine"
+        "Cinemachine",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.2D.SpriteShape.Runtime",
+        "Unity.AI.Navigation"
     ],
     "includePlatforms": [
         "Editor"

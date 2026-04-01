@@ -8,7 +8,7 @@
     "com.unity.analytics": "3.8.1",
     "com.unity.cinemachine": "2.10.3",
     "com.unity.collab-proxy": "2.7.1",
-    "h8man.nav-mesh-plus": "https://github.com/h8man/NavMeshPlus.git#master",
+    "com.h8man.2d.navmeshplus": "https://github.com/h8man/NavMeshPlus.git#master",
     "com.unity.ide.rider": "3.0.36",
     "com.unity.ide.visualstudio": "2.0.22",
     "com.unity.ide.vscode": "1.2.5",
