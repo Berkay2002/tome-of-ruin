@@ -173,7 +173,17 @@ def post_process(image: Image.Image, size: int = SPRITE_SIZE) -> Image.Image:
     # Clear Gemini watermark in bottom-right corner
     data[h - WATERMARK_MARGIN:, w - WATERMARK_MARGIN:] = [0, 0, 0, 0]
 
-    return Image.fromarray(data)
+    image = Image.fromarray(data)
+
+    # Resize to target sprite size
+    if image.size[0] != size or image.size[1] != size:
+        # Step down gradually for best quality: halve repeatedly, then final LANCZOS
+        while image.size[0] > size * 2:
+            half = (image.size[0] // 2, image.size[1] // 2)
+            image = image.resize(half, Image.LANCZOS)
+        image = image.resize((size, size), Image.LANCZOS)
+
+    return image
 
 
 def to_pil(image) -> Image.Image:
