@@ -99,7 +99,13 @@ public static class PrefabGenerator
         var attackVfx = go.AddComponent<AttackVisualFeedback>();
         attackVfx.swingArcRenderer = swingArcSr;
 
-        AssignPlaceholderSprite(go, "Player");
+        // Prefer real sprite, fall back to placeholder
+        var playerSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/Player/player_idle_down.png");
+        if (playerSprite != null)
+            go.GetComponent<SpriteRenderer>().sprite = playerSprite;
+        else
+            AssignPlaceholderSprite(go, "Player");
+
         PrefabUtility.SaveAsPrefabAsset(go, "Assets/Prefabs/Player/Player.prefab");
         Object.DestroyImmediate(go);
     }
