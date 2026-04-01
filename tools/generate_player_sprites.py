@@ -79,7 +79,7 @@ STATES = {
             ],
             "down_left": [
                 "Keep this exact pixel art character with the same armor, cape, helmet, sword, colors, and pixel art style. He is facing diagonally toward the lower left. Wind-up: both hands grip the sword pulled back above his right shoulder, weight on back foot, torso coiled. Black background.",
-                "Keep this exact pixel art character with the same armor, cape, helmet, sword, colors, and pixel art style. He is facing diagonally toward the lower left. Mid-swing: the sword sweeps diagonally toward the lower left, arms extended, torso rotating into the slash, cape flaring to the upper right. Black background.",
+                "Keep this exact pixel art character with the same armor, cape, helmet, sword, colors, and pixel art style. He is facing diagonally toward the lower left. Mid-swing: the sword sweeps diagonally toward the lower left, arms extended, torso rotating into the slash, cape flaring to the upper right. No slash effects, no motion trails, no swoosh lines, just the character. Black background.",
                 "Keep this exact pixel art character with the same armor, cape, helmet, sword, colors, and pixel art style. He is facing diagonally toward the lower left. Follow-through: the sword rests low to the lower left after the arc, body weight shifted forward, cape settling. Black background.",
             ],
             "up_left": [
@@ -180,8 +180,8 @@ def post_process(image: Image.Image, size: int = SPRITE_SIZE) -> Image.Image:
         # Step down gradually for best quality: halve repeatedly, then final LANCZOS
         while image.size[0] > size * 2:
             half = (image.size[0] // 2, image.size[1] // 2)
-            image = image.resize(half, Image.LANCZOS)
-        image = image.resize((size, size), Image.LANCZOS)
+            image = image.resize(half, Image.Resampling.LANCZOS)
+        image = image.resize((size, size), Image.Resampling.LANCZOS)
 
     return image
 
@@ -302,11 +302,14 @@ def main():
         idle_path = output_dir / f"{idle_filename}.png"
 
         # If cherry-picking or idle not in requested states, try to load from disk
+        # Prefer raw/ originals for feeding into Gemini (higher quality input)
         skip_gen = (only_set and idle_filename not in only_set) or (args.states and "idle" not in args.states)
         if skip_gen:
-            if idle_path.exists():
-                idle_bases[dir_name] = Image.open(idle_path)
-                print(f"  [LOAD] {idle_filename}.png (from disk)")
+            raw_path = raw_dir / f"{idle_filename}.png"
+            load_path = raw_path if raw_path.exists() else idle_path
+            if load_path.exists():
+                idle_bases[dir_name] = Image.open(load_path)
+                print(f"  [LOAD] {idle_filename}.png (from {'raw' if load_path == raw_path else 'disk'})")
             else:
                 print(f"  [SKIP] {idle_filename}.png (not targeted, not on disk)")
             continue
