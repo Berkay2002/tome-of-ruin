@@ -16,11 +16,11 @@
 **Method (Sheet-section transformation):**
 1. Slice a ~128x128 region from Ground_rocks.png containing the target tile type (floor or wall edge) with surrounding context
 2. Send the region to Gemini with a zone-specific prompt describing the desired color/texture modifications
-3. Post-process the output: remove watermark, crop to a single 16x16 tile, save
+3. Post-process the full Gemini output: remove watermark, resize to target resolution, save
 
-Gemini works better with larger images — the surrounding tiles provide style context and the model can understand the material and pixel art style. This mirrors how `generate_player_sprites.py` sends full character images rather than tiny crops.
+Gemini works better with larger images — the surrounding tiles provide style context and the model can understand the material and pixel art style. This mirrors how `generate_player_sprites.py` sends full character images rather than tiny crops. Gemini always outputs at ~1024x1024 regardless of input size, so all resizing is done in post-processing.
 
-**Output resolution:** Native 16x16 pixels. Unity handles display scaling via Pixels Per Unit.
+**Output resolution:** Wall edge sprites at 512x512, floor textures at 1024x1024 — matching the level geometry spec's SpriteShape requirements. Unity's Pixels Per Unit handles display scaling.
 
 ---
 
@@ -40,16 +40,16 @@ Two regions are sliced from `Ground_rocks.png` as input to Gemini:
 
 ```python
 REGIONS = {
-    "floor": (x1, y1, x2, y2),       # ~128x128 chunk of cracked stone floor area (bottom-right)
-    "wall_edge": (x1, y1, x2, y2),   # ~128x128 chunk of horizontal wall edge strips (middle rows)
+    "floor": (x1, y1, x2, y2),       # ~128x128 chunk of cracked stone floor area (bottom-right of sheet)
+    "wall_edge": (x1, y1, x2, y2),   # ~128x128 chunk of horizontal wall edge strips (middle rows of sheet)
 }
 ```
 
-Exact pixel coordinates will be determined during implementation by inspecting the sprite sheet. The regions should contain multiple tile variations to give Gemini enough context.
+Exact pixel coordinates will be determined during implementation by inspecting the sprite sheet. The floor region should target the cracked stone ground textures visible in the bottom-right area of Ground_rocks.png. The wall edge region should target the horizontal wall edge strips (dark stone tops transitioning to lighter floor) in the middle rows.
 
-After Gemini transforms the region, a single representative 16x16 tile is cropped from the result:
-- **Floor:** A seamless-tileable cracked stone tile
-- **Wall edge:** A horizontal strip that tiles along SpriteShape splines
+The full Gemini output is used as the asset — no sub-tile cropping. Gemini outputs at ~1024x1024, which is resized in post-processing:
+- **Floor:** Resized to 1024x1024 (seamless-tileable texture)
+- **Wall edge:** Resized to 512x512 (tiles along SpriteShape splines)
 
 ---
 
@@ -83,14 +83,19 @@ Mirrors `generate_player_sprites.py` patterns:
 
 ```
 1. Load Ground_rocks.png from temp_ref/
-2. Slice floor region and wall_edge region (128x128 chunks)
+2. Slice floor region and wall_edge region (~128x128 chunks)
 3. For each zone:
-   a. Send floor region + zone floor prompt to Gemini
-   b. Post-process: remove watermark, crop target 16x16 tile
-   c. Save to Assets/Art/LevelArt/{Zone}/Floor_{Zone}.png
-   d. Send wall_edge region + zone wall prompt to Gemini
-   e. Post-process: remove watermark, crop target 16x16 tile
-   f. Save to Assets/Art/LevelArt/{Zone}/WallEdge_{Zone}.png
+   a. Check if Floor_{Zone}.png exists — skip unless --force
+   b. Send floor region + zone floor prompt to Gemini
+   c. Save raw output to Assets/Art/LevelArt/raw/
+   d. Post-process: remove watermark on raw output, resize to 1024x1024
+   e. Save to Assets/Art/LevelArt/{Zone}/Floor_{Zone}.png
+   f. Check if WallEdge_{Zone}.png exists — skip unless --force
+   g. Send wall_edge region + zone wall prompt to Gemini
+   h. Save raw output to Assets/Art/LevelArt/raw/
+   i. Post-process: remove watermark on raw output, resize to 512x512
+   j. Save to Assets/Art/LevelArt/{Zone}/WallEdge_{Zone}.png
+   k. Brief delay (2s) between API calls for rate limiting
 4. Print summary
 ```
 
@@ -98,10 +103,9 @@ Mirrors `generate_player_sprites.py` patterns:
 
 Key difference from player sprites: **no background removal.** These are opaque tiles, not transparent characters.
 
-Post-processing steps:
-1. **Watermark removal:** Clear Gemini star in bottom-right corner (same `WATERMARK_MARGIN` approach as player sprites)
-2. **Crop:** Extract a single 16x16 tile from the transformed region. Crop coordinates target the center or a known-good position within the region.
-3. **Resize:** If Gemini output is larger than expected, downscale using nearest-neighbor resampling to preserve pixel art crispness.
+Post-processing steps (same order as `generate_player_sprites.py`):
+1. **Watermark removal:** Clear Gemini star in bottom-right corner on the raw ~1024x1024 output (same `WATERMARK_MARGIN` approach as player sprites — 80px corner clear)
+2. **Resize:** Downscale to target resolution (1024x1024 for floors, 512x512 for wall edges). Use gradual step-down with LANCZOS resampling, matching the player sprite script's approach (halve repeatedly, then final resize).
 
 ### CLI Interface
 
@@ -114,7 +118,11 @@ Options:
   --dry-run                   Print prompts without calling API
   --post-process-only         Re-run post-processing on existing raw/ images
   --no-post-process           Save raw Gemini output without post-processing
+  --force                     Overwrite existing files (default: skip if exists)
+  --model MODEL               Gemini model name (default: gemini-3-pro-image-preview)
 ```
+
+**Dependencies:** `google-genai`, `Pillow`, `numpy`, `python-dotenv` (same as `generate_player_sprites.py`)
 
 No positional argument needed — the base tileset path is hardcoded to `temp_ref/Ground_rocks.png` (relative to project root).
 
@@ -124,13 +132,13 @@ No positional argument needed — the base tileset path is hardcoded to `temp_re
 
 ```
 Assets/Art/LevelArt/
-├── raw/                           # Raw Gemini outputs for debugging
+├── raw/                           # Raw Gemini outputs (~1024x1024) for debugging
 │   ├── floor_ZoneA_raw.png
 │   ├── wall_edge_ZoneA_raw.png
 │   └── ...
 ├── ZoneA/
-│   ├── Floor_ZoneA.png            (16x16, replaces procedural placeholder)
-│   └── WallEdge_ZoneA.png         (16x16, replaces procedural placeholder)
+│   ├── Floor_ZoneA.png            (1024x1024, replaces procedural placeholder)
+│   └── WallEdge_ZoneA.png         (512x512, replaces procedural placeholder)
 ├── ZoneB/
 │   ├── Floor_ZoneB.png
 │   └── WallEdge_ZoneB.png
@@ -152,4 +160,4 @@ After running the Python script:
 1. Re-run **Tools > Generate SpriteShape Profiles** — picks up new wall edge sprites
 2. Re-run **Tools > Generate Floor Materials** — picks up new floor textures
 
-The existing C# generators (`FloorMaterialGenerator.cs`, `SpriteShapeProfileGenerator.cs`) currently create procedural placeholders at the same paths. The Python script's output overwrites them. Running the C# generators again after the Python script would overwrite the real art — avoid that. Future improvement: make the C# generators detect existing real art and skip procedural generation.
+The existing C# generators (`FloorMaterialGenerator.cs`, `SpriteShapeProfileGenerator.cs`) already have `File.Exists` guards — they skip texture creation when the file already exists. As long as the Python script's output filenames match exactly (`Floor_{Zone}.png`, `WallEdge_{Zone}.png`), re-running the C# generators will not overwrite the real art.
