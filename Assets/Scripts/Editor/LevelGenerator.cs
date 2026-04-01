@@ -5,6 +5,7 @@ using UnityEditor.SceneManagement;
 // using UnityEngine.U2D; // Re-enable when SpriteShapeController visuals are added
 using UnityEngine.Rendering.Universal;
 using Cinemachine;
+using System.Collections.Generic;
 
 public static class LevelGenerator
 {
@@ -358,30 +359,37 @@ public static class LevelGenerator
         edgePoints[vertices.Length] = vertices[0]; // Close the loop
         edgeCollider.points = edgePoints;
 
-        // --- Floor ---
-        var bounds = CalculateBounds(vertices);
+        // --- Floor (polygon mesh matching room shape) ---
         var floorObj = new GameObject("Floor");
         floorObj.transform.SetParent(roomObj.transform, false);
-        floorObj.transform.localPosition = new Vector3(bounds.center.x, bounds.center.y, 0);
 
-        var floorRenderer = floorObj.AddComponent<SpriteRenderer>();
-        floorRenderer.sortingOrder = -10;
+        var meshFilter = floorObj.AddComponent<MeshFilter>();
+        var meshRenderer = floorObj.AddComponent<MeshRenderer>();
+        meshRenderer.sortingOrder = -10;
 
-        var floorSprite = AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Art/LevelArt/{zoneName}/Floor_{zoneName}.png");
-        if (floorSprite != null)
+        int[] triangles = TriangulatePolygon(vertices);
+        if (triangles.Length > 0)
         {
-            floorRenderer.sprite = floorSprite;
-            floorRenderer.drawMode = SpriteDrawMode.Tiled;
-            floorRenderer.size = bounds.size;
-        }
-        else
-        {
-            Debug.LogWarning($"LevelGenerator: Floor sprite not found for {zoneName}. Run Tools > Generate Floor Materials first.");
+            var mesh = new Mesh();
+            var verts3d = new Vector3[vertices.Length];
+            var uvs = new Vector2[vertices.Length];
+            float tileScale = 0.1f; // UV scale: 1 tile per 10 units
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                verts3d[i] = new Vector3(vertices[i].x, vertices[i].y, 0);
+                uvs[i] = new Vector2(vertices[i].x * tileScale, vertices[i].y * tileScale);
+            }
+            mesh.vertices = verts3d;
+            mesh.triangles = triangles;
+            mesh.uv = uvs;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            meshFilter.mesh = mesh;
         }
 
         var floorMat = AssetDatabase.LoadAssetAtPath<Material>($"Assets/Materials/Floor_{zoneName}.mat");
         if (floorMat != null)
-            floorRenderer.material = floorMat;
+            meshRenderer.material = floorMat;
 
         // --- Camera Confiner ---
         var confinerObj = new GameObject("CameraConfiner");
@@ -480,6 +488,72 @@ public static class LevelGenerator
     // ----------------------------------------------------------------
     // Helper: Calculate Bounds
     // ----------------------------------------------------------------
+    // ----------------------------------------------------------------
+    // Helper: Ear-clipping polygon triangulation
+    // ----------------------------------------------------------------
+    private static int[] TriangulatePolygon(Vector2[] polygon)
+    {
+        var indices = new List<int>();
+        var remaining = new List<int>();
+        for (int i = 0; i < polygon.Length; i++)
+            remaining.Add(i);
+
+        int safety = polygon.Length * polygon.Length;
+        while (remaining.Count > 2 && safety-- > 0)
+        {
+            bool earFound = false;
+            for (int i = 0; i < remaining.Count; i++)
+            {
+                int prevIdx = (i - 1 + remaining.Count) % remaining.Count;
+                int nextIdx = (i + 1) % remaining.Count;
+                int prev = remaining[prevIdx];
+                int curr = remaining[i];
+                int next = remaining[nextIdx];
+
+                if (!IsConvex(polygon[prev], polygon[curr], polygon[next]))
+                    continue;
+
+                bool containsPoint = false;
+                for (int j = 0; j < remaining.Count; j++)
+                {
+                    if (j == prevIdx || j == i || j == nextIdx) continue;
+                    if (PointInTriangle(polygon[remaining[j]], polygon[prev], polygon[curr], polygon[next]))
+                    {
+                        containsPoint = true;
+                        break;
+                    }
+                }
+
+                if (!containsPoint)
+                {
+                    indices.Add(prev);
+                    indices.Add(curr);
+                    indices.Add(next);
+                    remaining.RemoveAt(i);
+                    earFound = true;
+                    break;
+                }
+            }
+            if (!earFound) break;
+        }
+        return indices.ToArray();
+    }
+
+    private static bool IsConvex(Vector2 a, Vector2 b, Vector2 c)
+    {
+        return ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) > 0;
+    }
+
+    private static bool PointInTriangle(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
+    {
+        float d1 = (p.x - b.x) * (a.y - b.y) - (a.x - b.x) * (p.y - b.y);
+        float d2 = (p.x - c.x) * (b.y - c.y) - (b.x - c.x) * (p.y - c.y);
+        float d3 = (p.x - a.x) * (c.y - a.y) - (c.x - a.x) * (p.y - a.y);
+        bool hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0);
+        bool hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0);
+        return !(hasNeg && hasPos);
+    }
+
     private static Rect CalculateBounds(Vector2[] vertices)
     {
         float minX = float.MaxValue, minY = float.MaxValue;
