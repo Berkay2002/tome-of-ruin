@@ -43,15 +43,16 @@ FLOOR_SIZE = 2048   # final output resolution for floor tiles (2K)
 WALL_EDGE_SIZE = 512  # final output resolution for wall edge sprites
 DEPTH_SIZE = 512    # final output resolution for depth feature sprites
 ZONES = ["ZoneA", "ZoneB", "ZoneC", "BossArena"]
-ASSET_TYPES = ["floor", "wall_edge", "cliff_edge", "boulder", "stairs"]
+ASSET_TYPES = ["floor", "wall_edge", "boulder", "cave", "rock_column", "stairs"]
 
 # Pixel regions to slice from spritesheets: (sheet_key, left, top, right, bottom)
 REGIONS = {
     "floor": ("ground", 368, 464, 496, 592),
     "wall_edge": ("ground", 0, 192, 128, 320),
-    "cliff_edge": ("ground", 128, 0, 304, 128),     # 176x128 cliff top edge with drop shadow
-    "boulder": ("coast", 0, 128, 80, 200),           # 80x72 boulder with shadow
-    "stairs": ("coast", 700, 128, 832, 200),         # 132x72 stepped stone pile
+    "boulder": ("coast", 64, 128, 128, 192),         # 64x64 single boulder with drop shadow
+    "cave": ("ground", 0, 0, 96, 112),               # 96x112 oval cave/pit entrance
+    "rock_column": ("ground", 432, 48, 464, 112),    # 32x64 stacked stone column/pillar
+    "stairs": ("coast", 768, 128, 832, 192),          # 64x64 single stone stair pile
 }
 
 # --- Zone Prompts ---
@@ -75,25 +76,32 @@ ZONE_PROMPTS = {
             "perspective exactly the same. This is a wall edge sprite for a dark fantasy starting ruins area in a "
             "top-down 2D game."
         ),
-        "cliff_edge": (
-            "Using the provided image of a dark stone cliff edge seen from top-down, change only the colors and "
-            "surface texture to look like ancient overgrown ruins. The cliff face should be gray-green weathered "
-            "stone with dark moss clinging to the rock face. Subtle vine tendrils hanging over the edge. "
-            "Keep the exact same silhouette, drop shadow, and top-down perspective. The white/light background "
-            "area should remain white. This is a cliff ledge sprite for a dark fantasy ruins zone in a top-down 2D game."
-        ),
         "boulder": (
             "Using the provided image of a top-down boulder with shadow, change only the colors and surface "
             "texture to look like a moss-covered ancient ruin stone. Gray-green weathered rock with dark green "
             "moss patches and subtle lichen. Keep the exact same shape, shadow, and top-down perspective. "
-            "The white/light background area should remain white. This is a decorative boulder for a dark fantasy "
+            "The transparent background must remain transparent. This is a decorative boulder for a dark fantasy "
+            "ruins zone in a top-down 2D game."
+        ),
+        "cave": (
+            "Using the provided image of an oval cave opening seen from top-down, change only the colors and "
+            "surface texture to look like an ancient ruin pit or cave entrance. Gray-green weathered stone rim "
+            "with moss growing along the edges. The dark interior should stay dark. Keep the exact same oval shape, "
+            "shadow, and top-down perspective. The transparent background must remain transparent. "
+            "This is a cave/pit entrance for a dark fantasy ruins zone in a top-down 2D game."
+        ),
+        "rock_column": (
+            "Using the provided image of a stacked stone column seen from top-down, change only the colors and "
+            "surface texture to look like a crumbling ancient ruin pillar. Gray-green weathered stone with moss "
+            "growing in the cracks between blocks. Keep the exact same shape, stacking, and top-down perspective. "
+            "The transparent background must remain transparent. This is a decorative pillar for a dark fantasy "
             "ruins zone in a top-down 2D game."
         ),
         "stairs": (
             "Using the provided image of stepped stone piles seen from top-down, change only the colors and "
             "surface texture to look like crumbling ancient ruin steps. Gray-green weathered stone blocks, "
             "irregular and broken, with moss growing between the cracks. Keep the exact same shape, stacking, "
-            "shadow, and top-down perspective. The white/light background area should remain white. "
+            "shadow, and top-down perspective. The transparent background must remain transparent. "
             "This is a stairs sprite for a dark fantasy ruins zone in a top-down 2D game."
         ),
     },
@@ -115,26 +123,32 @@ ZONE_PROMPTS = {
             "perspective exactly the same. This is a wall edge sprite for a dark fantasy catacomb level in a "
             "top-down 2D game."
         ),
-        "cliff_edge": (
-            "Using the provided image of a dark stone cliff edge seen from top-down, change only the colors and "
-            "surface texture to look like underground catacomb ledges. Warm brown eroded stone, smooth from "
-            "centuries of water erosion. Small bone fragments embedded in the rock face. Sandy dust on the "
-            "ledge surface. Keep the exact same silhouette, drop shadow, and top-down perspective. The white/light "
-            "background area should remain white. This is a cliff ledge sprite for a dark fantasy catacomb in a "
-            "top-down 2D game."
-        ),
         "boulder": (
             "Using the provided image of a top-down boulder with shadow, change only the colors and surface "
             "texture to look like a catacomb rock formation. Warm brown smooth stone, eroded and rounded by "
             "centuries underground. Bone-white mineral deposits on the surface. Keep the exact same shape, shadow, "
-            "and top-down perspective. The white/light background area should remain white. This is a decorative "
+            "and top-down perspective. The transparent background must remain transparent. This is a decorative "
             "boulder for a dark fantasy catacomb in a top-down 2D game."
+        ),
+        "cave": (
+            "Using the provided image of an oval cave opening seen from top-down, change only the colors and "
+            "surface texture to look like a catacomb pit or ossuary entrance. Warm brown eroded stone rim with "
+            "bone fragments embedded along the edges. The dark interior should stay dark. Keep the exact same "
+            "oval shape, shadow, and top-down perspective. The transparent background must remain transparent. "
+            "This is a cave/pit entrance for a dark fantasy catacomb in a top-down 2D game."
+        ),
+        "rock_column": (
+            "Using the provided image of a stacked stone column seen from top-down, change only the colors and "
+            "surface texture to look like a worn catacomb pillar. Warm brown smooth stone, eroded by centuries. "
+            "Bone-white mineral deposits in the cracks. Keep the exact same shape, stacking, and top-down "
+            "perspective. The transparent background must remain transparent. This is a decorative pillar for "
+            "a dark fantasy catacomb in a top-down 2D game."
         ),
         "stairs": (
             "Using the provided image of stepped stone piles seen from top-down, change only the colors and "
             "surface texture to look like worn catacomb steps. Warm brown stone, smoothed by centuries of foot "
             "traffic, with sandy dust accumulated in the corners. Keep the exact same shape, stacking, shadow, "
-            "and top-down perspective. The white/light background area should remain white. "
+            "and top-down perspective. The transparent background must remain transparent. "
             "This is a stairs sprite for a dark fantasy catacomb in a top-down 2D game."
         ),
     },
@@ -156,26 +170,32 @@ ZONE_PROMPTS = {
             "edge shape, and top-down perspective exactly the same. This is a wall edge sprite for a dark fantasy "
             "cursed chapel in a top-down 2D game."
         ),
-        "cliff_edge": (
-            "Using the provided image of a dark stone cliff edge seen from top-down, change only the colors and "
-            "surface texture to look like a cursed chapel ledge. Deep purple-gray carved stone with ornate details. "
-            "Thin crimson stains dripping down the cliff face. Faint ritual scratch marks carved into the stone. "
-            "Keep the exact same silhouette, drop shadow, and top-down perspective. The white/light background "
-            "area should remain white. This is a cliff ledge sprite for a dark fantasy cursed chapel in a "
-            "top-down 2D game."
-        ),
         "boulder": (
             "Using the provided image of a top-down boulder with shadow, change only the colors and surface "
             "texture to look like a cursed chapel rubble stone. Deep purple-gray carved stone, deliberately shaped "
             "but now broken. Faint crimson stains and ritual scratch marks on the surface. Keep the exact same "
-            "shape, shadow, and top-down perspective. The white/light background area should remain white. "
+            "shape, shadow, and top-down perspective. The transparent background must remain transparent. "
             "This is a decorative boulder for a dark fantasy cursed chapel in a top-down 2D game."
+        ),
+        "cave": (
+            "Using the provided image of an oval cave opening seen from top-down, change only the colors and "
+            "surface texture to look like a cursed chapel pit or ritual well. Deep purple-gray ornate stone rim "
+            "with crimson stains dripping into the darkness. Faint ritual scratch marks along the edge. Keep the "
+            "exact same oval shape, shadow, and top-down perspective. The transparent background must remain "
+            "transparent. This is a cave/pit entrance for a dark fantasy cursed chapel in a top-down 2D game."
+        ),
+        "rock_column": (
+            "Using the provided image of a stacked stone column seen from top-down, change only the colors and "
+            "surface texture to look like a cursed chapel pillar. Deep purple-gray ornate carved stone with "
+            "ritual markings and crimson stains between blocks. Keep the exact same shape, stacking, and top-down "
+            "perspective. The transparent background must remain transparent. This is a decorative pillar for "
+            "a dark fantasy cursed chapel in a top-down 2D game."
         ),
         "stairs": (
             "Using the provided image of stepped stone piles seen from top-down, change only the colors and "
             "surface texture to look like cursed chapel steps. Deep purple-gray ornate carved stone blocks "
             "with crimson stains seeping between steps. Keep the exact same shape, stacking, shadow, and "
-            "top-down perspective. The white/light background area should remain white. "
+            "top-down perspective. The transparent background must remain transparent. "
             "This is a stairs sprite for a dark fantasy cursed chapel in a top-down 2D game."
         ),
     },
@@ -197,26 +217,32 @@ ZONE_PROMPTS = {
             "style, edge shape, and top-down perspective exactly the same. This is a wall edge sprite for a dark "
             "fantasy boss arena in a top-down 2D game."
         ),
-        "cliff_edge": (
-            "Using the provided image of a dark stone cliff edge seen from top-down, change only the colors and "
-            "surface texture to look like scorched boss arena obsidian. Near-black fused stone with a melted "
-            "appearance. Faint orange-red glow in the deepest cracks of the cliff face. Monolithic and oppressive. "
-            "Keep the exact same silhouette, drop shadow, and top-down perspective. The white/light background "
-            "area should remain white. This is a cliff ledge sprite for a dark fantasy boss arena in a "
-            "top-down 2D game."
-        ),
         "boulder": (
             "Using the provided image of a top-down boulder with shadow, change only the colors and surface "
             "texture to look like scorched obsidian. Near-black fused stone with subtle blue-gray veining and "
             "faint orange-red glow in the deepest cracks. Smooth, melted appearance. Keep the exact same shape, "
-            "shadow, and top-down perspective. The white/light background area should remain white. "
+            "shadow, and top-down perspective. The transparent background must remain transparent. "
             "This is a decorative boulder for a dark fantasy boss arena in a top-down 2D game."
+        ),
+        "cave": (
+            "Using the provided image of an oval cave opening seen from top-down, change only the colors and "
+            "surface texture to look like a scorched magma vent. Near-black obsidian rim with faint orange-red "
+            "glow seeping from the interior. Melted, fused appearance. Keep the exact same oval shape, shadow, "
+            "and top-down perspective. The transparent background must remain transparent. "
+            "This is a cave/pit entrance for a dark fantasy boss arena in a top-down 2D game."
+        ),
+        "rock_column": (
+            "Using the provided image of a stacked stone column seen from top-down, change only the colors and "
+            "surface texture to look like a scorched obsidian pillar. Near-black fused stone with faint orange-red "
+            "glow in the cracks between blocks. Melted, monolithic appearance. Keep the exact same shape, stacking, "
+            "and top-down perspective. The transparent background must remain transparent. This is a decorative "
+            "pillar for a dark fantasy boss arena in a top-down 2D game."
         ),
         "stairs": (
             "Using the provided image of stepped stone piles seen from top-down, change only the colors and "
             "surface texture to look like scorched obsidian steps. Near-black fused stone blocks with a melted "
             "appearance. Faint orange-red glow seeping between the steps. Keep the exact same shape, stacking, "
-            "shadow, and top-down perspective. The white/light background area should remain white. "
+            "shadow, and top-down perspective. The transparent background must remain transparent. "
             "This is a stairs sprite for a dark fantasy boss arena in a top-down 2D game."
         ),
     },
@@ -337,8 +363,9 @@ def target_size_for(asset_type: str) -> int:
 ASSET_FILENAMES = {
     "floor": "Floor",
     "wall_edge": "WallEdge",
-    "cliff_edge": "CliffEdge",
     "boulder": "Boulder",
+    "cave": "Cave",
+    "rock_column": "RockColumn",
     "stairs": "Stairs",
 }
 
